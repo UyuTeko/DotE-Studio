@@ -656,6 +656,95 @@ body{touch-action:manipulation}
 .accent-sw{border:2px solid var(--line);box-shadow:var(--shadow-sm);padding:0;height:56px;cursor:pointer;position:relative}
 .accent-sw span{position:absolute;left:0;right:0;bottom:0;font-size:10px;line-height:1.5;background:var(--panel);color:var(--ink);border-top:2px solid var(--line)}
 .accent-sw.is-on{outline:3px solid var(--ink);outline-offset:1px}
+
+/* ===== スマホ・タブレット画面 (the second editor layout) =====
+   Modelled on phone drawing apps (ibisPaint and friends): the canvas
+   owns the stage, the tools live on a slim scrollable rail at the
+   left edge, tool-option panels and the layer / colour panels float
+   over the canvas as sheets, and a bottom bar carries undo / redo,
+   the current colour and the panel switches. The top menu stays but
+   compacts to the essentials (every feature remains reachable from
+   it). Toggled from 表示 → 画面, which puts .layout-mobile on
+   <body>; the PC layout above is completely untouched. */
+#mobileBar{display:none}
+body.layout-mobile #mobileBar{
+  display:flex;gap:6px;align-items:stretch;flex:none;
+  background:var(--panel);border-top:3px solid var(--line);
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:46;
+}
+body.home-open #mobileBar{display:none}
+.mb-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:var(--panel2);border:2px solid var(--line);box-shadow:var(--shadow-sm);
+  padding:5px 2px;font-size:16px;line-height:1.2;color:var(--ink);min-height:48px;
+}
+.mb-btn span{font-size:10px}
+.mb-btn:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--line)}
+.mb-btn:disabled{opacity:.38}
+.mb-btn.is-on{background:var(--amber);color:#26221c}
+.mb-swatch{width:22px;height:22px;border:2px solid var(--line);display:block;background:#26221c}
+.mb-swatch.transp{background:conic-gradient(#fff 0 25%, #cfcfcf 0 50%, #fff 0 75%, #cfcfcf 0);background-size:8px 8px}
+
+/* compact top bar: brand name, size group, undo group and the save
+   status step aside (undo/redo live in the bottom bar; canvas size
+   is under ファイル → キャンバスサイズ; export under 書き出し) */
+body.layout-mobile{height:100dvh;overflow:hidden}
+body.layout-mobile .topbar{flex-wrap:nowrap;overflow-x:auto;padding:4px 6px;gap:6px;scrollbar-width:none}
+body.layout-mobile .topbar::-webkit-scrollbar{display:none}
+body.layout-mobile .brand-txt{display:none}
+body.layout-mobile .topbar .top-group{display:none}
+body.layout-mobile .save-status{display:none}
+body.layout-mobile .menus{flex-wrap:nowrap;flex:none}
+body.layout-mobile .menus .menu{display:block}
+
+/* stage: rail + canvas in one row, canvas maximised */
+body.layout-mobile .workspace{display:flex;flex-direction:row;padding:0;gap:0}
+body.layout-mobile .side{order:0}
+body.layout-mobile .center-col{order:0;flex:1;min-width:0;gap:0}
+body.layout-mobile .stage-panel{border:0;box-shadow:none;padding:6px}
+body.layout-mobile .frames-panel{border-left:0;border-right:0;border-bottom:0;box-shadow:none}
+body.layout-mobile.mobile-frames-closed .frames-panel{display:none}
+
+/* the left column becomes the tool rail: icon + short label,
+   one column, scrollable */
+body.layout-mobile .side:not(.side-right){
+  flex:none;width:64px;background:var(--panel);border-right:2px solid var(--line);
+  padding:4px;gap:6px;overflow-y:auto;overflow-x:hidden;
+}
+body.layout-mobile #panelTools{padding:2px;border:0;box-shadow:none;background:transparent}
+body.layout-mobile #panelTools h2{display:none}
+body.layout-mobile .tool-grid{grid-template-columns:1fr;gap:5px}
+body.layout-mobile .tool-btn{font-size:9.5px;padding:7px 0 5px;gap:1px}
+body.layout-mobile .tool-btn svg{width:20px;height:20px}
+body.layout-mobile .tool-key,body.layout-mobile .tool-key-l{display:none}
+body.layout-mobile #panelTools .mt label{display:none}
+body.layout-mobile #brushSeg{flex-direction:column}
+body.layout-mobile #brushSeg button{border-right:0;border-bottom:2px solid var(--line);padding:5px 0}
+body.layout-mobile #brushSeg button:last-child{border-bottom:0}
+
+/* tool-option panels (図形・選択範囲・拡大縮小・文字・マップチップ・
+   色置き換え・ミラー) float over the canvas next to the rail */
+body.layout-mobile .side .panel:not(#panelTools):not(#panelLayers){
+  position:fixed;left:72px;top:52px;width:min(302px,84vw);z-index:64;
+  max-height:calc(100dvh - 140px);overflow-y:auto;
+}
+
+/* layers float as a sheet from the bottom-right (bottom-bar switch) */
+body.layout-mobile #panelLayers{display:none}
+body.layout-mobile.mobile-layers-open #panelLayers{
+  display:block;position:fixed;right:8px;bottom:76px;width:min(324px,88vw);z-index:66;
+  max-height:calc(100dvh - 160px);overflow-y:auto;
+}
+body.layout-mobile #panelLayers .layer-list{max-height:36dvh}
+
+/* colour / preview / used colours float as one sheet from the top-right */
+body.layout-mobile .side-right{display:none}
+body.layout-mobile.mobile-color-open .side-right{
+  display:flex;position:fixed;right:8px;top:52px;width:min(324px,88vw);z-index:66;
+  max-height:calc(100dvh - 140px);overflow-y:auto;padding:2px;gap:8px;background:transparent;
+}
+body.layout-mobile .side-right .used-panel{flex:none}
+body.layout-mobile .side-right .used-list{max-height:170px;flex:none}
 </style>
 </head>
 <body>
@@ -684,6 +773,7 @@ body{touch-action:manipulation}
         <button id="mNew">新規プロジェクト…</button>
         <button id="mSize">キャンバスサイズ…</button>
         <button id="mImport">画像を読み込む…</button>
+        <button id="mImportUri">data URIから読み込む…</button>
         <button id="mHfp" hidden>HackforPlayのキャラを使う…</button>
         <div class="msep"></div>
         <button id="mBrowserSave">ブラウザに保存</button>
@@ -747,6 +837,12 @@ body{touch-action:manipulation}
         <div class="msep"></div>
         <button id="mFit">画面に合わせる（フィット）</button>
         <button id="mActual">原寸の4倍で表示</button>
+        <div class="msep"></div>
+        <button id="mZoomOut">ページを縮小</button>
+        <button id="mZoomReset">ページ倍率：100%</button>
+        <button id="mZoomIn">ページを拡大</button>
+        <div class="msep"></div>
+        <button id="mLayoutMode">画面：PC</button>
       </div>
     </div>
     <div class="menu" id="menuWindow">
@@ -804,7 +900,14 @@ body{touch-action:manipulation}
       </div>
       <div class="home-actions">
         <button class="px-btn primary" id="homeNewBtn">＋ 新規プロジェクト</button>
-        <button class="px-btn" id="homeOpenFileBtn">PCから開く（.dspx）…</button>
+        <div class="menu" id="menuHomeLoad">
+          <button class="menu-btn" data-menu="menuHomeLoad" style="border:2px solid var(--line);background:var(--panel);box-shadow:var(--shadow-sm);font-size:13px;padding:5px 9px">読み込む ▾</button>
+          <div class="menu-panel" style="left:auto;right:0;min-width:236px">
+            <button id="homeLoadDspx">.dspxファイルを開く…</button>
+            <button id="homeLoadImage">画像ファイルから新規プロジェクト…</button>
+            <button id="homeLoadUri">data URIから読み込む…</button>
+          </div>
+        </div>
         <button class="px-btn" id="homeHowBtn">つかいかた</button>
         <button class="px-btn" id="homeThemeBtn" title="ライトモード／ダークモードを切り替えます">テーマ：自動</button>
         <button class="px-btn" id="homeAccentBtn" hidden>テーマカラー</button>
@@ -841,6 +944,7 @@ body{touch-action:manipulation}
       <button class="px-btn primary" id="homeEmptyNewBtn">＋ 新規プロジェクトを作る</button>
     </div>
     <input type="file" id="homeDspxFile" accept=".dspx,.json,application/json" hidden>
+    <input type="file" id="homeImgFile" accept="image/*" hidden>
     <input type="file" id="homeRestoreFile" accept=".json,application/json" hidden>
   </div>
 </div>
@@ -1123,6 +1227,15 @@ body{touch-action:manipulation}
   </div>
 </div>
 
+<!-- スマホ・タブレット画面の下部バー（body.layout-mobile のときだけ表示） -->
+<div id="mobileBar">
+  <button class="mb-btn" id="mbUndo" aria-label="戻す">↩<span>戻す</span></button>
+  <button class="mb-btn" id="mbRedo" aria-label="やり直し">↪<span>やり直し</span></button>
+  <button class="mb-btn" id="mbColorBtn" aria-label="カラーを開く"><span class="mb-swatch" id="mbSwatch"></span><span>カラー</span></button>
+  <button class="mb-btn" id="mbFramesBtn" aria-label="フレームの表示・非表示">▦<span>フレーム</span></button>
+  <button class="mb-btn" id="mbLayersBtn" aria-label="レイヤーを開く">▤<span>レイヤー</span></button>
+</div>
+
 <div class="exp-backdrop" id="sizeBackdrop" hidden>
   <div class="panel exp-dialog" role="dialog" aria-label="キャンバスサイズ" style="width:min(360px,94vw)">
     <h2>キャンバスサイズ</h2>
@@ -1353,6 +1466,9 @@ body{touch-action:manipulation}
         <div class="help-box"><h3>Delete</h3><p>選択範囲／レイヤー／フレームを消します（最後に触った対象）。</p></div>
         <div class="help-box"><h3>拡大縮小ツール</h3><p>選択範囲（なければ今のフレーム全体）を掴んで角をドラッグすると拡げたり縮めたりできます。移動と同じ浮動方式で、確定するまで下のドットは上書きされません。左の「拡大縮小」パネルでは倍率を数字でも指定できます。</p></div>
         <div class="help-box"><h3>エフェクトの拡大縮小</h3><p>エフェクトにも「拡大縮小」があります（非破壊）。倍率と、拡縮の中心（左上・中央・右下など9方向）を指定できます。</p></div>
+        <div class="help-box"><h3>data URIから読み込む</h3><p>「ファイル → data URIから読み込む…」で、画像の data URI を貼り付けて読み込めます（プロジェクトの data URI ならプロジェクトとして開きます）。ホーム画面の「読み込む」メニューからも、画像ファイルや data URI で新規プロジェクトを作れます。</p></div>
+        <div class="help-box"><h3>ページ倍率（ブラウザズーム）</h3><p>「表示」メニューの「ページを拡大／縮小」で、キャンバスではなくページ全体の表示倍率を変えられます。「ページ倍率：○○%」で100%に戻ります。倍率は保存され、次回も維持されます。</p></div>
+        <div class="help-box"><h3>画面レイアウト（PC／スマホ・タブレット）</h3><p>「表示」メニューの「画面」で、PC画面とスマホ・タブレット画面を切り替えられます。スマホ・タブレット画面では、左端のツールレール、下部のバー（戻す／やり直し／カラー／フレーム／レイヤー）を使い、レイヤーやカラーは重ねて開くパネルになります。最初の既定は端末に合わせて自動で選ばれ、切り替えると保存されます。</p></div>
     </div>
     <div class="mini-row mt">
       <button class="px-btn primary" id="helpCloseBtn" style="flex:1">閉じる</button>
@@ -2043,6 +2159,10 @@ function colorCtxItems(c, opts){
 }
 function showCtx(x, y, items){
   ctxFresh=true; /* tells the global fallback this event already has a menu */
+  /* callers pass client (visual) coordinates; style positioning is
+     in layout pixels, so convert by the page-zoom factor (1 at the
+     default 100%, where this changes nothing) */
+  var z=pageZoomFactor(); x/=z; y/=z;
   setTimeout(function(){ ctxFresh=false; },0);
   closeCtx();
   var m=document.createElement("div"); m.className="ctx-menu";
@@ -2102,7 +2222,7 @@ function markEdit(){ projRev++; updateSaveStatus(); }
 function restore(s){ var d=JSON.parse(s); W=d.w; H=d.h; frames=d.frames; frameGroups=d.fg||[]; curFrame=Math.min(d.cur,frames.length-1); sel=null; flatEpoch++; /* restored frames are new objects, but keep the edit-epoch invariant airtight */ if(d.c){ expCols=Math.max(1,Math.min(64,d.c)); expRows=Math.max(1,Math.min(64,d.r||1)); syncSheetUI(); } normalizeLoaded(); syncCanvasSize(false); renderAll(); }
 function undo(){ if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); syncUndoBtns(); toast("戻しました"); }
 function redo(){ if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); syncUndoBtns(); toast("やり直しました"); }
-function syncUndoBtns(){ $("undoBtn").disabled=!undoStack.length; $("redoBtn").disabled=!redoStack.length; $("mUndo").disabled=!undoStack.length; $("mRedo").disabled=!redoStack.length; }
+function syncUndoBtns(){ $("undoBtn").disabled=!undoStack.length; $("redoBtn").disabled=!redoStack.length; $("mUndo").disabled=!undoStack.length; $("mRedo").disabled=!redoStack.length; var mu=$("mbUndo"), mr=$("mbRedo"); if(mu) mu.disabled=!undoStack.length; if(mr) mr.disabled=!redoStack.length; }
 
 /* ============ canvas sizing / zoom / grid ============ */
 /* The editing surface size in cells: one frame in normal mode, the
@@ -2174,8 +2294,19 @@ function applyWrapSize(){
    reports; between those, the cached copy is exact, and the zoom
    path becomes write-only. */
 var areaRectCache=null;
+/* The page-zoom factor (表示 → ページ倍率; 1 = 100%). CSS zoom makes
+   getBoundingClientRect report VISUAL (zoomed) pixels while style
+   writes and the wrap's size live in LAYOUT pixels, so every rect
+   that feeds layout math is normalised back to layout pixels here;
+   pure-ratio math (pointer → cell, pinch fractions) is unaffected
+   either way. pageZoomFactor itself is declared with the page-zoom
+   controls further down (function declarations hoist). */
 function areaRect(){
-  if(!areaRectCache) areaRectCache=area.getBoundingClientRect();
+  if(!areaRectCache){
+    var r=area.getBoundingClientRect(), z=pageZoomFactor();
+    if(z===1) areaRectCache=r;
+    else areaRectCache={left:r.left/z, top:r.top/z, right:r.right/z, bottom:r.bottom/z, width:r.width/z, height:r.height/z};
+  }
   return areaRectCache;
 }
 function dropAreaRect(){ areaRectCache=null; }
@@ -2206,6 +2337,10 @@ function zoomAt(cx,cy,size){
   var ar=areaRect(); if(!ar.width) return;
   var wr=wrap.getBoundingClientRect();
   var fx=(cx-wr.left)/Math.max(1,wr.width), fy=(cy-wr.top)/Math.max(1,wr.height);
+  /* the fraction above is zoom-proof (a pure ratio); the pan math
+     below works in layout pixels, so the pointer position joins
+     areaRect in that space */
+  var z=pageZoomFactor(); cx/=z; cy/=z;
   setZoom(size,true);
   var ws=wrapSize();
   panX=(cx-fx*ws.w)-ar.left-(ar.width-ws.w)/2;
@@ -2746,7 +2881,12 @@ function frameSig(fr, useFx){
    could slip between probes are single-cell ones, and every
    single-cell write path in the app announces itself via _v
    (spaceSet and the audited direct writes), which the signature
-   already covers. */
+   already covers. All six hex digits of a probed colour feed the
+   hash: mixing only the high nibbles (chars 1/3/5) let a rewrite
+   whose colours shared those nibbles pass as "unchanged". This is
+   a backstop, though — write paths must announce themselves via
+   _v (see announceLayerWrite); the checksum is never the primary
+   mechanism. */
 function dataSumInto(list, h){
   for(var i=0;i<list.length;i++){
     var n=list[i];
@@ -2755,7 +2895,7 @@ function dataSumInto(list, h){
     var len=d.length, step=Math.max(1,(len/2048)|0);
     for(var j=0;j<len;j+=step){
       var c=d[j];
-      h = c? (h*31 + c.charCodeAt(1)*3 + c.charCodeAt(3)*5 + c.charCodeAt(5)*11)|0 : (h*7+1)|0;
+      h = c? (h*31 + c.charCodeAt(1)*3 + c.charCodeAt(3)*5 + c.charCodeAt(5)*11 + c.charCodeAt(2)*13 + c.charCodeAt(4)*17 + c.charCodeAt(6)*19)|0 : (h*7+1)|0;
     }
     h=(h*31+len)|0;
   }
@@ -4009,11 +4149,15 @@ function applyGesture(){
   if(tapTrack && (Math.abs(gf-1)>0.02 || (tapTrack.mx!=null && Math.hypot(gm.x-tapTrack.mx, gm.y-tapTrack.my)>12))) tapTrack.moved=true;
   if(Math.abs(gf-1)>0.0004) setZoom(stagePx*gf, true);
   /* glue: the anchored canvas fraction lands exactly on the
-     fingers' current midpoint — zoom and pan in a single step */
+     fingers' current midpoint — zoom and pan in a single step.
+     The midpoint enters in client (visual) pixels and the pan math
+     works in layout pixels, so it is normalised by the page zoom,
+     exactly like areaRect. */
   var ar=areaRect(); if(!ar.width) return;
   var ws=wrapSize();
-  panX=(gm.x-touchGesture.fx*ws.w)-ar.left-(ar.width-ws.w)/2;
-  panY=(gm.y-touchGesture.fy*ws.h)-ar.top-(ar.height-ws.h)/2;
+  var z=pageZoomFactor(), gx=gm.x/z, gy=gm.y/z;
+  panX=(gx-touchGesture.fx*ws.w)-ar.left-(ar.width-ws.w)/2;
+  panY=(gy-touchGesture.fy*ws.h)-ar.top-(ar.height-ws.h)/2;
   clampPan(); layoutWrap(); sizeHiRes();
 }
 /* A tracked finger went away (up or cancel). Fewer than two left:
@@ -4907,6 +5051,9 @@ var PALETTE=["#000000","#26221c","#5a5348","#9c9284","#ffffff","#f2ede4","#d9d2c
 var extraPalette=[];
 function setColor(c){
   color=c;
+  /* the mobile bottom bar mirrors the current colour */
+  var msw=$("mbSwatch");
+  if(msw){ msw.style.background=c? c : ""; msw.classList.toggle("transp", !c); }
   /* the preview face is the colour input itself now, so it always shows
      the current colour; transparency falls back to the last colour */
   if(c){ $("hexInput").value=c; $("colorPicker").value=c; }
@@ -5074,7 +5221,7 @@ function applyCanvasSize(nw, nh){
   var oldW=W, oldH=H;
   W=nw; H=nh;
   frames.forEach(function(fr){
-    eachNode(fr.layers,function(m){ if(m.type==="layer") m.data=resizeData(m.data, oldW, oldH); });
+    eachNode(fr.layers,function(m){ if(m.type==="layer"){ m.data=resizeData(m.data, oldW, oldH); announceLayerWrite(m); } });
   });
   curFrame=Math.min(curFrame,frames.length-1); sel=null;
   syncCanvasSize(false); if(!manualZoom) fitZoom();
@@ -6145,7 +6292,7 @@ var curProjId=null, projPcSaved=false;
 var projLive=false;
 var projRev=0, pcSavedRev=-1, pcSavedAt=null, browserSavedRev=-1, lastBrowserAt=null;
 var quotaWarned=false, lastDeleted=null;
-var settings={auto:true, interval:60, lastId:null, theme:"auto", themeColor:null, panels:{}};
+var settings={auto:true, interval:60, lastId:null, theme:"auto", themeColor:null, panels:{}, pageZoom:100, layout:null};
 function loadSettings(){
   try{ var s=JSON.parse(localStorage.getItem(SET_KEY)||"null"); if(s && typeof s==="object") settings=Object.assign(settings,s); }catch(e){}
 }
@@ -6698,6 +6845,8 @@ $("homeView").addEventListener("contextmenu",function(e){
       {desc:"ドット絵スタジオ ・ ホーム"},
       {label:"新規プロジェクト…", fn:function(){ openNewDialog(); }},
       {label:"PCから開く（.dspx）…", fn:function(){ $("homeDspxFile").click(); }},
+      {label:"画像ファイルから新規プロジェクト…", fn:function(){ $("homeLoadImage").click(); }},
+      {label:"data URIから読み込む…", fn:function(){ openDataUriDialog("home"); }},
       {sep:true},
       {label:"全プロジェクトをバックアップ", fn:function(){ $("homeBackupBtn").click(); }},
       {label:"バックアップから復元…", fn:function(){ $("homeRestoreBtn").click(); }},
@@ -6716,7 +6865,19 @@ $("mHome").addEventListener("click",function(){ showHome(); });
 $("mBrowserSave").addEventListener("click",function(){ saveToBrowser(false); });
 $("homeNewBtn").addEventListener("click",function(){ openNewDialog(); });
 $("homeEmptyNewBtn").addEventListener("click",function(){ openNewDialog(); });
-$("homeOpenFileBtn").addEventListener("click",function(){ $("homeDspxFile").click(); });
+$("homeLoadDspx").addEventListener("click",function(){ $("homeDspxFile").click(); });
+$("homeLoadImage").addEventListener("click",function(){ $("homeImgFile").click(); });
+$("homeImgFile").addEventListener("change",function(e){
+  var f=e.target.files[0]; e.target.value="";
+  if(!f) return;
+  /* from home, an image always becomes a NEW project (the import
+     dialog's destination is preset; the project being edited stays
+     in the browser store when auto-save is on) */
+  hideHome();
+  impPreset={dest:"project"};
+  loadImageSource(f);
+});
+$("homeLoadUri").addEventListener("click",function(){ openDataUriDialog("home"); });
 $("homeSearch").addEventListener("input",function(){ homeQuery=this.value; renderHome(); });
 $("homeSort").addEventListener("change",function(){ homeSortMode=this.value; renderHome(); });
 $("homeBackupBtn").addEventListener("click",function(){
@@ -6763,7 +6924,20 @@ $("homeRestoreFile").addEventListener("change",function(e){
   r.readAsText(f); e.target.value="";
 });
 /* opening a .dspx from home adds it to the list (it does not switch the
-   editor); it is by definition already saved on the PC */
+   editor); it is by definition already saved on the PC. A project data
+   URI pasted on the home screen lands in the same place. */
+function addProjectObjectToHome(d, fallbackName){
+  var now=new Date().toISOString();
+  var rec={ id:newProjId(), createdAt:now, updatedAt:now,
+    name:(typeof d.name==="string" && d.name)? d.name : fallbackName,
+    pcSaved:true, pcSavedAt:null, fav:false,
+    w:d.w, h:d.h||d.w, framesCount:d.frames.length, data:d, thumb:thumbFromData(d), anim:null };
+  var st=loadStore(); st.unshift(rec);
+  try{ writeStore(st); }catch(err){ toast("容量不足で一覧に追加できませんでした"); return false; }
+  renderHome();
+  toast("「"+rec.name+"」を一覧に追加しました");
+  return true;
+}
 $("homeDspxFile").addEventListener("change",function(e){
   var f=e.target.files[0]; if(!f) return;
   var r=new FileReader();
@@ -6771,15 +6945,7 @@ $("homeDspxFile").addEventListener("change",function(e){
     try{
       var d=JSON.parse(r.result);
       if(!d.frames||!d.w) throw new Error("bad");
-      var now=new Date().toISOString();
-      var rec={ id:newProjId(), createdAt:now, updatedAt:now,
-        name:(typeof d.name==="string" && d.name)? d.name : f.name.replace(/\.dspx$/i,"").replace(/\.json$/i,""),
-        pcSaved:true, pcSavedAt:null, fav:false,
-        w:d.w, h:d.h||d.w, framesCount:d.frames.length, data:d, thumb:thumbFromData(d), anim:null };
-      var st=loadStore(); st.unshift(rec);
-      try{ writeStore(st); }catch(err){ toast("容量不足で一覧に追加できませんでした"); return; }
-      renderHome();
-      toast("「"+rec.name+"」を一覧に追加しました");
+      addProjectObjectToHome(d, f.name.replace(/\.dspx$/i,"").replace(/\.json$/i,""));
     }catch(err){ toast("そのファイルは読み込めませんでした"); }
   };
   r.readAsText(f); e.target.value="";
@@ -7136,31 +7302,36 @@ $("jsonFile").addEventListener("change",function(e){
     try{
       var d=JSON.parse(r.result);
       if(!d.frames||!d.w) throw new Error("bad");
-      expandPayload(d); /* v3: unpack the packed layer data */
-      pushHistory(); W=d.w; H=d.h||d.w; frames=d.frames; frameGroups=d.frameGroups||[]; curFrame=0; fps=d.fps||8; sel=null;
-      if(typeof d.name==="string"){ projName=d.name; $("projName").value=d.name; }
-      normalizeLoaded();
-      expCols=Math.max(1, Math.min(64, parseInt(d.cols,10)||1));
-      expRows=Math.max(1, Math.min(64, parseInt(d.rows,10)||1));
-      syncSheetUI();
-      /* legacy saves: a single global effect set lived outside the layers */
-      if(d.effects){
-        frames.forEach(function(fr){
-          var first=null;
-          eachNode(fr.layers,function(m){ if(!first && m.type==="layer") first=m; });
-          if(first) first.fx=saneFx(Object.assign({}, d.effects));
-        });
-      }
-      $("fpsRange").value=fps; $("fpsNum").value=fps;
-      curProjId=null; projPcSaved=true; projLive=true; /* it came from a file on the PC */
-      projRev=0; pcSavedRev=0; pcSavedAt=null; browserSavedRev=-1; lastBrowserAt=null;
-      updateSaveStatus();
-      hideHome();
-      syncCanvasSize(false); toast("プロジェクトを開きました");
+      loadProjectObject(d);
     }catch(err){ toast("そのファイルは読み込めませんでした"); }
   };
   r.readAsText(f); e.target.value="";
 });
+/* Open a parsed project object in the editor (a .dspx file, or a
+   project data URI — both funnel through here). */
+function loadProjectObject(d){
+  expandPayload(d); /* v3: unpack the packed layer data */
+  pushHistory(); W=d.w; H=d.h||d.w; frames=d.frames; frameGroups=d.frameGroups||[]; curFrame=0; fps=d.fps||8; sel=null;
+  if(typeof d.name==="string"){ projName=d.name; $("projName").value=d.name; }
+  normalizeLoaded();
+  expCols=Math.max(1, Math.min(64, parseInt(d.cols,10)||1));
+  expRows=Math.max(1, Math.min(64, parseInt(d.rows,10)||1));
+  syncSheetUI();
+  /* legacy saves: a single global effect set lived outside the layers */
+  if(d.effects){
+    frames.forEach(function(fr){
+      var first=null;
+      eachNode(fr.layers,function(m){ if(!first && m.type==="layer") first=m; });
+      if(first) first.fx=saneFx(Object.assign({}, d.effects));
+    });
+  }
+  $("fpsRange").value=fps; $("fpsNum").value=fps;
+  curProjId=null; projPcSaved=true; projLive=true; /* it came from a file on the PC */
+  projRev=0; pcSavedRev=0; pcSavedAt=null; browserSavedRev=-1; lastBrowserAt=null;
+  updateSaveStatus();
+  hideHome();
+  syncCanvasSize(false); toast("プロジェクトを開きました");
+}
 $("imgFile").addEventListener("change",function(e){
   var files=e.target.files;
   if(!files || !files.length) return;
@@ -7649,20 +7820,36 @@ function closeImport(){
 }
 $("impCancelBtn").addEventListener("click",closeImport);
 $("impBackdrop").addEventListener("click",function(e){ if(e.target===this) closeImport(); });
-/* paste cells into a W×H data array at the anchor position, clipping */
-function blitCells(data, r){
+/* Announce a wholesale or in-place pixel write that bypassed
+   spaceSet: bump the layer's data version (part of every flatten /
+   thumbnail cache signature) and drop its cached painted box, so
+   the very next render picks the change up deterministically. The
+   image-import paths used to do neither — they relied on the
+   sampled checksum backstop in flattenFrameA, which can miss a
+   write that lands between its probes (a small image blitted into
+   a big canvas) or whose colours share the probed nibbles, and a
+   blit into an already-rendered layer also left the painted box
+   stale, so even a recomposite clipped the new pixels away. The
+   result was the reported bug: an imported image sometimes did not
+   appear until an unrelated edit (adding a layer) changed the
+   signature and forced a recomposite. */
+function announceLayerWrite(l){ if(!l) return; l._v=(l._v||0)+1; l._bbD=null; }
+/* paste cells into a W×H data array at the anchor position, clipping;
+   the owning layer is announced so caches see the write at once */
+function blitCells(data, r, layer){
   var ox=(impPos==="tl"||impPos==="bl")? 0 : (impPos==="tr"||impPos==="br")? W-r.w : Math.floor((W-r.w)/2);
   var oy=(impPos==="tl"||impPos==="tr")? 0 : (impPos==="bl"||impPos==="br")? H-r.h : Math.floor((H-r.h)/2);
   for(var y=0;y<r.h;y++) for(var x=0;x<r.w;x++){
     var v=r.cells[y*r.w+x];
     if(v && inBounds(ox+x, oy+y)) data[idx(ox+x,oy+y)]=v;
   }
+  announceLayerWrite(layer);
 }
 function resizeAllFrames(nw, nh){
   var oldW=W, oldH=H;
   W=nw; H=nh;
   frames.forEach(function(fr){
-    eachNode(fr.layers,function(m){ if(m.type==="layer") m.data=resizeData(m.data, oldW, oldH); });
+    eachNode(fr.layers,function(m){ if(m.type==="layer"){ m.data=resizeData(m.data, oldW, oldH); announceLayerWrite(m); } });
   });
   sel=null;
 }
@@ -7694,8 +7881,8 @@ function applyImportResult(r, dest){
   }
   if(dest==="newlayer"){
     var nl=newLayer("読み込みレイヤー");
-    if(r.w===W && r.h===H) nl.data=r.cells.slice();
-    else blitCells(nl.data, r);
+    if(r.w===W && r.h===H){ nl.data=r.cells.slice(); announceLayerWrite(nl); }
+    else blitCells(nl.data, r, nl);
     frames[curFrame].layers.unshift(nl);
     frames[curFrame].active=nl.id;
     renderAll();
@@ -7704,8 +7891,8 @@ function applyImportResult(r, dest){
   /* current layer: replace when the size matches, blit otherwise */
   var dl=drawLayer();
   if(dl){
-    if(r.w===W && r.h===H) dl.data=r.cells.slice();
-    else blitCells(dl.data, r);
+    if(r.w===W && r.h===H){ dl.data=r.cells.slice(); announceLayerWrite(dl); }
+    else blitCells(dl.data, r, dl);
   }
   renderAll();
 }
@@ -7784,7 +7971,7 @@ $("impGoBtn").addEventListener("click",function(){
         var r=processImpSource(im);
         if(r.w!==W || r.h!==H){
           var nf=makeFrame();
-          blitCells(nf.layers[0].data, r);
+          blitCells(nf.layers[0].data, r, nf.layers[0]);
           frames.push(nf);
         } else frames.push(frameFromCells(r));
         added++;
@@ -7886,13 +8073,16 @@ function makeDialogDraggable(dialog){
   var dx=0, dy=0, drag=null;
   head.addEventListener("pointerdown",function(e){
     if(e.target.closest("button,input,select,textarea")) return;
-    drag={x:e.clientX-dx, y:e.clientY-dy};
+    drag={x:e.clientX, y:e.clientY, dx0:dx, dy0:dy};
     head.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
   head.addEventListener("pointermove",function(e){
     if(!drag) return;
-    dx=e.clientX-drag.x; dy=e.clientY-drag.y;
+    /* pointer deltas are visual pixels; the transform is in layout
+       pixels, so divide out the page zoom (a no-op at 100%) */
+    var z=pageZoomFactor();
+    dx=drag.dx0+(e.clientX-drag.x)/z; dy=drag.dy0+(e.clientY-drag.y)/z;
     dialog.style.transform="translate("+dx+"px,"+dy+"px)";
   });
   function end(){ drag=null; }
@@ -8525,10 +8715,180 @@ $("hfpUseBtn").addEventListener("click",useHfpSelection);
 $("mHfp").addEventListener("click",function(){ openHfpPicker("editor"); });
 $("npHfpBtn").addEventListener("click",function(){ openHfpPicker("new"); });
 
+/* ============ data URI import (editor + home) ============
+   A pasted data URI is routed by its payload: an image data URI
+   goes through the regular image-import dialog (from home it
+   becomes a new project, like 画像ファイルから新規プロジェクト);
+   a data URI whose decoded text is a project JSON opens as a
+   project (in the editor, or onto the home list from home — the
+   same destinations the file routes use). */
+function parseDataUri(uri){
+  var m=/^data:([^;,]*)(;base64)?,([\s\S]*)$/.exec(uri||"");
+  if(!m) return null;
+  return {mime:(m[1]||"").toLowerCase(), base64:!!m[2], body:m[3]};
+}
+function dataUriBytes(uri){
+  var p=parseDataUri(uri); if(!p) return null;
+  try{
+    if(p.base64){
+      var bin=atob(p.body.replace(/\s+/g,""));
+      var u=new Uint8Array(bin.length);
+      for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+      return u;
+    }
+    return new TextEncoder().encode(decodeURIComponent(p.body));
+  }catch(e){ return null; }
+}
+function handleDataUri(uri, ctx){
+  uri=(uri||"").trim();
+  var p=parseDataUri(uri);
+  if(!p){ toast("data URIとして読み込めませんでした"); return; }
+  if(p.mime.indexOf("image/")===0){
+    var bytes=dataUriBytes(uri);
+    if(!bytes){ toast("その data URI は読み込めませんでした"); return; }
+    var blob=new Blob([bytes], {type:p.mime});
+    if(ctx==="home"){ hideHome(); impPreset={dest:"project"}; }
+    loadImageSource(blob);
+    return;
+  }
+  var bytes2=dataUriBytes(uri);
+  if(bytes2){
+    try{
+      var d=JSON.parse(new TextDecoder("utf-8").decode(bytes2));
+      if(d && d.frames && d.w){
+        if(ctx==="home") addProjectObjectToHome(d, "data URIのプロジェクト");
+        else loadProjectObject(d);
+        return;
+      }
+    }catch(e){}
+  }
+  toast("その data URI は読み込めませんでした（画像かプロジェクトの data URIを貼ってね）");
+}
+function openDataUriDialog(ctx){
+  openDlg({
+    title:"data URIから読み込む",
+    msg:"画像の data URI（data:image/png;base64,... など）か、プロジェクトの data URI を貼り付けてください。",
+    input:{value:"", placeholder:"data:image/png;base64,..."},
+    buttons:[
+      {label:"読み込む", kind:"primary", fn:function(v){ handleDataUri(v, ctx); }},
+      {label:"キャンセル"}
+    ]
+  });
+}
+$("mImportUri").addEventListener("click",function(){ openDataUriDialog("editor"); });
+
+/* ============ ページ倍率 (page zoom — the browser-zoom equivalent) ====
+   NOT the canvas zoom: the whole page scales, via the CSS zoom
+   property on <html>. The choice lives in settings, so it survives
+   reloads. Layout code that mixes client coordinates with style
+   pixels is normalised by pageZoomFactor (see areaRect, zoomAt,
+   applyGesture, showCtx and the dialog drag). */
+var PAGE_ZOOM_STEPS=[50,67,75,80,90,100,110,125,150,175,200];
+function pageZoomVal(){
+  var v=(typeof settings!=="undefined" && settings)? settings.pageZoom : null;
+  return (typeof v==="number" && v>=25 && v<=400)? v : 100;
+}
+function pageZoomFactor(){ return pageZoomVal()/100; }
+function applyPageZoom(){
+  var v=pageZoomVal();
+  document.documentElement.style.zoom=String(v/100);
+  var b=$("mZoomReset"); if(b) b.textContent="ページ倍率："+v+"%";
+  dropAreaRect();
+}
+function setPageZoom(v){
+  settings.pageZoom=v; saveSettings(); applyPageZoom();
+  requestAnimationFrame(function(){ layoutWrap(); sizeHiRes(); });
+  toast("ページ倍率を "+v+"% にしました");
+}
+function stepPageZoom(dir){
+  var cur=pageZoomVal(), nxt=null, i;
+  if(dir>0){ for(i=0;i<PAGE_ZOOM_STEPS.length;i++) if(PAGE_ZOOM_STEPS[i]>cur){ nxt=PAGE_ZOOM_STEPS[i]; break; } if(nxt==null) nxt=PAGE_ZOOM_STEPS[PAGE_ZOOM_STEPS.length-1]; }
+  else { for(i=PAGE_ZOOM_STEPS.length-1;i>=0;i--) if(PAGE_ZOOM_STEPS[i]<cur){ nxt=PAGE_ZOOM_STEPS[i]; break; } if(nxt==null) nxt=PAGE_ZOOM_STEPS[0]; }
+  if(nxt!==cur) setPageZoom(nxt);
+}
+$("mZoomIn").addEventListener("click",function(){ stepPageZoom(1); });
+$("mZoomOut").addEventListener("click",function(){ stepPageZoom(-1); });
+$("mZoomReset").addEventListener("click",function(){ if(pageZoomVal()!==100) setPageZoom(100); });
+
+/* ============ 画面レイアウト: PC / スマホ・タブレット ============
+   Two editor layouts over the same DOM: the PC layout (default on
+   desktop) and the mobile layout (a slim tool rail on the left,
+   floating layer / colour sheets, a bottom bar — see the
+   body.layout-mobile CSS). The user can switch any time from
+   表示 → 画面 and the choice is saved; until they choose, the
+   default follows the device: touch-first devices (phones and
+   tablets, iPads included — modern iPads send a desktop UA, so
+   platform + touch points are checked too) start in the mobile
+   layout, mouse-first devices in the PC layout. */
+function detectDefaultLayout(){
+  try{
+    var touch=(navigator.maxTouchPoints||0)>1;
+    var ua=navigator.userAgent||"";
+    if(/iPad/.test(ua)) return "mobile";
+    if(navigator.platform==="MacIntel" && touch) return "mobile";
+    if(window.matchMedia && window.matchMedia("(pointer: coarse)").matches && touch) return "mobile";
+  }catch(e){}
+  return "pc";
+}
+function layoutMode(){
+  var v=(typeof settings!=="undefined" && settings)? settings.layout : null;
+  return (v==="mobile"||v==="pc")? v : detectDefaultLayout();
+}
+function applyLayout(){
+  var m=layoutMode();
+  document.body.classList.toggle("layout-mobile", m==="mobile");
+  if(m!=="mobile") document.body.classList.remove("mobile-layers-open","mobile-color-open");
+  var b=$("mLayoutMode"); if(b) b.textContent="画面："+(m==="mobile"? "スマホ・タブレット" : "PC");
+  syncMobileBar();
+  requestAnimationFrame(function(){ if(!manualZoom) fitZoom(); else { layoutWrap(); sizeHiRes(); } });
+}
+function setLayoutMode(m){
+  settings.layout=m; saveSettings(); applyLayout();
+  toast(m==="mobile"? "スマホ・タブレット画面に切り替えました" : "PC画面に切り替えました");
+}
+$("mLayoutMode").addEventListener("click",function(){
+  setLayoutMode(layoutMode()==="mobile"? "pc" : "mobile");
+});
+/* ---- the mobile bottom bar: undo / redo, current colour, and the
+   switches for the floating colour sheet, the frame strip and the
+   floating layer sheet ---- */
+function syncMobileBar(){
+  var fb=$("mbFramesBtn");
+  if(fb) fb.classList.toggle("is-on", !document.body.classList.contains("mobile-frames-closed"));
+  var lb=$("mbLayersBtn"); if(lb) lb.classList.toggle("is-on", document.body.classList.contains("mobile-layers-open"));
+  var cb=$("mbColorBtn"); if(cb) cb.classList.toggle("is-on", document.body.classList.contains("mobile-color-open"));
+}
+$("mbUndo").addEventListener("click",function(){ undo(); });
+$("mbRedo").addEventListener("click",function(){ redo(); });
+$("mbColorBtn").addEventListener("click",function(){
+  var open=document.body.classList.toggle("mobile-color-open");
+  if(open) document.body.classList.remove("mobile-layers-open");
+  syncMobileBar();
+});
+$("mbLayersBtn").addEventListener("click",function(){
+  var open=document.body.classList.toggle("mobile-layers-open");
+  if(open) document.body.classList.remove("mobile-color-open");
+  syncMobileBar();
+});
+$("mbFramesBtn").addEventListener("click",function(){
+  document.body.classList.toggle("mobile-frames-closed");
+  syncMobileBar();
+  requestAnimationFrame(function(){ if(!manualZoom) fitZoom(); else { layoutWrap(); sizeHiRes(); } });
+});
+/* going back to the canvas dismisses the floating sheets */
+area.addEventListener("pointerdown",function(){
+  if(!document.body.classList.contains("layout-mobile")) return;
+  if(document.body.classList.contains("mobile-layers-open") || document.body.classList.contains("mobile-color-open")){
+    document.body.classList.remove("mobile-layers-open","mobile-color-open");
+    syncMobileBar();
+  }
+});
+
 /* ============ init ============ */
 buildPalette(); setColor("#26221c"); setRepTo("#26221c"); setTool("pen");
 syncCanvasSize(true); restartPreview(); syncUndoBtns();
 renderExtList(); applyExtState();
+applyPageZoom(); applyLayout();
 requestAnimationFrame(function(){ fitZoom(); sizeHiRes(); });
 /* the app opens on the home screen; the editor behind it holds the
    blank starter project until the user picks or creates one */
