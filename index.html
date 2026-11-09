@@ -1997,7 +1997,7 @@ function colorCtxItems(c, opts){
     items.push({label:"この色を今のフレームから全て消す", fn:function(){
       pushHistory();
       var n=0;
-      eachNode(frames[curFrame].layers,function(m){ if(m.type==="layer") n+=replaceInData(m.data, c, null); });
+      eachNode(frames[curFrame].layers,function(m){ if(m.type==="layer") n+=replaceInLayer(m, c, null); });
       renderAll();
       toast(n? c+" を "+n+"px 消しました" : "その色は使われていませんでした");
     }});
@@ -2072,7 +2072,7 @@ function pushHistory(){ undoStack.push(snapshot()); if(undoStack.length>90) undo
    the home badges compare it against the revisions captured when the
    project was last written to the PC / to the browser */
 function markEdit(){ projRev++; updateSaveStatus(); }
-function restore(s){ var d=JSON.parse(s); W=d.w; H=d.h; frames=d.frames; frameGroups=d.fg||[]; curFrame=Math.min(d.cur,frames.length-1); sel=null; if(d.c){ expCols=Math.max(1,Math.min(64,d.c)); expRows=Math.max(1,Math.min(64,d.r||1)); syncSheetUI(); } normalizeLoaded(); syncCanvasSize(false); renderAll(); }
+function restore(s){ var d=JSON.parse(s); W=d.w; H=d.h; frames=d.frames; frameGroups=d.fg||[]; curFrame=Math.min(d.cur,frames.length-1); sel=null; flatEpoch++; /* restored frames are new objects, but keep the edit-epoch invariant airtight */ if(d.c){ expCols=Math.max(1,Math.min(64,d.c)); expRows=Math.max(1,Math.min(64,d.r||1)); syncSheetUI(); } normalizeLoaded(); syncCanvasSize(false); renderAll(); }
 function undo(){ if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); syncUndoBtns(); toast("戻しました"); }
 function redo(){ if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); syncUndoBtns(); toast("やり直しました"); }
 function syncUndoBtns(){ $("undoBtn").disabled=!undoStack.length; $("redoBtn").disabled=!redoStack.length; $("mUndo").disabled=!undoStack.length; $("mRedo").disabled=!redoStack.length; }
@@ -2606,28 +2606,71 @@ function frameSig(fr, useFx){
   nodeSigInto(fr.layers, parts, useFx);
   return parts.join("|");
 }
+/* Sampled checksum of layer pixel data (up to ~2048 probed cells
+   per layer, spread over the whole array). It exists to verify —
+   cheaply — that a frame's pixels really are what a cache entry
+   was built from, even when the edit epoch has moved on. Every
+   whole-layer rewrite (replace, erase, clear, bake, restore) hits
+   probed cells with practical certainty; the only writes that
+   could slip between probes are single-cell ones, and every
+   single-cell write path in the app announces itself via _v
+   (spaceSet and the audited direct writes), which the signature
+   already covers. */
+function dataSumInto(list, h){
+  for(var i=0;i<list.length;i++){
+    var n=list[i];
+    if(n.type==="group"){ h=dataSumInto(n.children||[], h); continue; }
+    var d=n.data; if(!d) continue;
+    var len=d.length, step=Math.max(1,(len/2048)|0);
+    for(var j=0;j<len;j+=step){
+      var c=d[j];
+      h = c? (h*31 + c.charCodeAt(1)*3 + c.charCodeAt(3)*5 + c.charCodeAt(5)*11)|0 : (h*7+1)|0;
+    }
+    h=(h*31+len)|0;
+  }
+  return h;
+}
+function frameDataSum(fr){ return dataSumInto(fr.layers, 7); }
 function flattenFrameA(fi, useFx){
   var fr=frames[fi]; if(!fr) return {data:blank(), alpha:null};
   var sig=frameSig(fr, useFx);
   var ent=flatCache.get(fr);
-  /* Validity is the signature alone. That is sound because EVERY
-     pixel write is signature-visible: drawing goes through spaceSet
-     (bumps the layer's _v, part of the signature), and the handful
-     of direct writes (frame clear, edit transforms, merge-down, the
-     float lift / commit / cancel paths) bump _v themselves. So when
-     the signature still matches after a renderAll — most renderAlls
-     follow UI changes, not pixel changes — the cached composite AND
-     its raster are reused instead of rebuilt. flatEpoch is still
-     bumped by pushHistory / renderAll as a generation marker, but
-     it no longer forces a rebuild on its own. */
+  /* Validity = signature AND currency. The signature covers the
+     writes that announce themselves: drawing goes through spaceSet
+     (bumps the layer's _v, part of the signature), and the known
+     direct writes (frame clear, edit transforms, merge-down, the
+     float lift / commit / cancel paths, replaceInLayer) bump _v
+     themselves. Currency is the structural backstop for a write
+     that forgot: pushHistory — which EVERY discrete edit calls
+     before mutating — advances flatEpoch, and an entry from an
+     older epoch is only reused after the sampled data checksum
+     proves the pixels are byte-identical to the ones it was built
+     from (then it is adopted into the new epoch). That is what was
+     missing in the colour-replace bug: the replace rewrote the
+     data in place without bumping _v, the signature still matched,
+     and the canvas and previews kept showing the old composite
+     until the next pen stroke bumped _v. Now the checksum catches
+     the change and the frame is rebuilt immediately — while an
+     untouched frame keeps its cached composite across edits, so
+     the epoch check costs a checksum pass, not a recomposite.
+     Epoch and checksum are tracked per variant (fx / raw): one
+     variant's rebuild or adoption never vouches for the other.
+     renderAll deliberately does NOT advance the epoch (it fires
+     for pure UI changes too — frame switches, panel refreshes),
+     and during a stroke the epoch is stable, so the cache still
+     serves every pointermove render between the stroke's plots. */
   if(ent){
-    if(useFx && ent.fxSig===sig){ ent.epoch=flatEpoch; return ent.fxRes; }
-    if(!useFx && ent.rawSig===sig){ ent.epoch=flatEpoch; return ent.rawRes; }
+    if(useFx){
+      if(ent.fxSig===sig && (ent.fxEpoch===flatEpoch || frameDataSum(fr)===ent.fxSum)){ ent.fxEpoch=flatEpoch; return ent.fxRes; }
+    } else {
+      if(ent.rawSig===sig && (ent.rawEpoch===flatEpoch || frameDataSum(fr)===ent.rawSum)){ ent.rawEpoch=flatEpoch; return ent.rawRes; }
+    }
   }
   var res=flattenFrameACompute(fi, useFx);
   if(!ent){ ent={}; flatCache.set(fr, ent); }
-  ent.epoch=flatEpoch;
-  if(useFx){ ent.fxSig=sig; ent.fxRes=res; } else { ent.rawSig=sig; ent.rawRes=res; }
+  var sum=frameDataSum(fr);
+  if(useFx){ ent.fxSig=sig; ent.fxRes=res; ent.fxEpoch=flatEpoch; ent.fxSum=sum; }
+  else { ent.rawSig=sig; ent.rawRes=res; ent.rawEpoch=flatEpoch; ent.rawSum=sum; }
   return res;
 }
 function flattenFrameACompute(fi, useFx){
@@ -2751,7 +2794,11 @@ function renderPreviewFrame(idx){
   if(frames[idx]) drawFrameToA(pctx, flattenFrameA(idx,true), 1);
 }
 function renderAll(){
-  flatEpoch++; /* a finished operation may have rewritten pixel data in place */
+  /* NOTE: flatEpoch is NOT advanced here. It is the edit counter the
+     flatten caches check (see flattenFrameA) and it belongs to
+     pushHistory: advancing it on every renderAll — including pure
+     UI refreshes like switching frames — would throw away every
+     cached composite each time. */
   renderForce=true; render(); renderForce=false;
   renderPreviewFrame(curFrame); drawSel();
 }
@@ -3141,9 +3188,18 @@ function floodFill(x,y,target,repl){
     stack.push([px+1,py],[px-1,py],[px,py+1],[px,py-1]);
   }
 }
-function replaceInData(data,from,to){
-  var n=0;
+/* Whole-layer colour rewrite (colour replace, erase-this-colour).
+   It writes the layer's data array IN PLACE, bypassing spaceSet, so
+   it must announce the change itself: bump the layer's _v, which is
+   part of every cache signature. Forgetting that was the colour-
+   replace bug — the data changed but the flatten signature didn't,
+   so the canvas and the previews kept showing the old colours until
+   the next pen stroke happened to bump _v. (pushHistory's epoch
+   check in flattenFrameA is the second line of defence.) */
+function replaceInLayer(l,from,to){
+  var n=0, data=l.data;
   for(var i=0;i<data.length;i++) if(data[i]===from){ data[i]=to; n++; }
+  if(n) l._v=(l._v||0)+1;
   return n;
 }
 
@@ -3640,25 +3696,84 @@ function renderRecent(){
    was making is cancelled (pixels already down stay down) and the
    remaining finger never resumes drawing when the gesture ends. */
 var touchPts=new Map();   /* pointerId -> {x, y} of live touch pointers */
-var touchGesture=null;    /* {d, mx, my} while two fingers are down */
-function gestureMid(){
-  var pts=[]; touchPts.forEach(function(p){ pts.push(p); });
-  return { x:(pts[0].x+pts[1].x)/2, y:(pts[0].y+pts[1].y)/2,
-           d:Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y) };
+/* The active two-finger gesture, or null: {fx, fy, d}.
+   fx / fy are the canvas fraction (0..1 across the wrap) that sat
+   under the fingers' midpoint when the gesture was anchored; that
+   point stays glued to the midpoint for the whole gesture, so a
+   pinch and a pan are ONE atomic view transform, recomputed from
+   the anchor on every animation frame. The previous implementation
+   applied each pointermove as an incremental step — zoom around
+   the NEW midpoint, then add the midpoint's own movement on top —
+   which double-counts the translation whenever the fingers move
+   AND spread at once (the view drifted by Δmid·(1−zoomFactor) per
+   step, so the picture slid out from under the fingers), and it
+   forced several synchronous layout reads per move event, which
+   made the view stutter behind the fingers. d is the finger
+   distance at the last applied frame. */
+var touchGesture=null;
+var gestureQueued=false;
+function gesturePair(){
+  var pts=[];
+  touchPts.forEach(function(p){ if(pts.length<2) pts.push(p); });
+  return pts.length===2? pts : null;
 }
-/* One gesture step, shared by the canvas and the stage around it:
-   spreading / closing the fingers zooms around their midpoint, and
-   moving both fingers pans by the midpoint's own movement — the
-   direct, map-app feel. Deltas are incremental, so the view tracks
-   the fingers instead of jumping. */
-function gestureStep(){
-  if(!touchGesture || touchPts.size<2) return;
-  var gm=gestureMid();
-  var gf=gm.d/Math.max(10,touchGesture.d);
-  if(Math.abs(gf-1)>0.001) zoomAt(gm.x, gm.y, stagePx*gf);
-  panX+=gm.x-touchGesture.mx; panY+=gm.y-touchGesture.my;
-  clampPan(); layoutWrap();
-  touchGesture={d:Math.max(10,gm.d), mx:gm.x, my:gm.y};
+function gestureMidD(pr){
+  return { x:(pr[0].x+pr[1].x)/2, y:(pr[0].y+pr[1].y)/2,
+           d:Math.hypot(pr[0].x-pr[1].x, pr[0].y-pr[1].y) };
+}
+/* (Re)anchor the gesture on the pair's current position: whatever
+   canvas point is under the midpoint right now becomes the glue
+   point, and the current finger distance becomes the zoom
+   baseline, so (re)anchoring itself never moves the view. Called
+   when a gesture starts and again if the tracked pair changes
+   mid-gesture (one of the pair lifted while a third finger was
+   down) — neither transition jumps. */
+function anchorGesture(){
+  var pr=gesturePair();
+  if(!pr){ touchGesture=null; return; }
+  var gm=gestureMidD(pr);
+  var wr=wrap.getBoundingClientRect();
+  touchGesture={ fx:(gm.x-wr.left)/Math.max(1,wr.width), fy:(gm.y-wr.top)/Math.max(1,wr.height), d:Math.max(1,gm.d) };
+}
+function startGesture(){
+  cancelStrokeForGesture();
+  anchorGesture();
+}
+/* Pointer moves only record positions; the transform is applied
+   once per animation frame from the newest pair position, so the
+   view can neither run ahead of the fingers nor fall behind in
+   steps, however fast the events arrive. */
+function queueGesture(){
+  if(gestureQueued) return;
+  gestureQueued=true;
+  requestAnimationFrame(applyGesture);
+}
+function applyGesture(){
+  gestureQueued=false;
+  if(!touchGesture) return;
+  var pr=gesturePair(); if(!pr) return;
+  var gm=gestureMidD(pr);
+  var gf=gm.d/touchGesture.d;
+  touchGesture.d=Math.max(1,gm.d);
+  if(Math.abs(gf-1)>0.0004) setZoom(stagePx*gf, true);
+  /* glue: the anchored canvas fraction lands exactly on the
+     fingers' current midpoint — zoom and pan in a single step */
+  var ar=area.getBoundingClientRect(); if(!ar.width) return;
+  var ws=wrapSize();
+  panX=(gm.x-touchGesture.fx*ws.w)-ar.left-(ar.width-ws.w)/2;
+  panY=(gm.y-touchGesture.fy*ws.h)-ar.top-(ar.height-ws.h)/2;
+  clampPan(); layoutWrap(); sizeHiRes();
+}
+/* A tracked finger went away (up or cancel). Fewer than two left:
+   the gesture is over and the remaining finger stays inert — it
+   never resumes the stroke the gesture cancelled, and since no
+   transform is applied on the transition itself, the view does
+   not jump. If the pair changed under a third finger, re-anchor
+   on the new pair so the view does not jump either. */
+function gesturePointerGone(){
+  if(!touchGesture) return;
+  if(touchPts.size<2){ touchGesture=null; return; }
+  anchorGesture();
 }
 function cancelStrokeForGesture(){
   drawing=false; panDrag=null; pendingRight=null;
@@ -3742,9 +3857,7 @@ wrap.addEventListener("pointerdown",function(e){
   if(e.pointerType==="touch"){
     touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
     if(touchPts.size===2 && !touchGesture){
-      cancelStrokeForGesture();
-      var g0=gestureMid();
-      touchGesture={d:Math.max(10,g0.d), mx:g0.x, my:g0.y};
+      startGesture();
       e.preventDefault();
       try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
       return;
@@ -3825,7 +3938,7 @@ wrap.addEventListener("pointerdown",function(e){
     pushHistory();
     var n=0;
     var rfr=spaceFrame(p.x,p.y);
-    eachNode(frames[rfr? rfr.fi : curDrawFrameIdx()].layers,function(m){ if(m.type==="layer") n+=replaceInData(m.data, target, repTo); });
+    eachNode(frames[rfr? rfr.fi : curDrawFrameIdx()].layers,function(m){ if(m.type==="layer") n+=replaceInLayer(m, target, repTo); });
     setRepFrom(target);
     addRecent(repTo); renderAll();
     toast(target+" → "+repTo+" に "+n+"px 置き換えました（全レイヤー）");
@@ -3926,7 +4039,7 @@ wrap.addEventListener("pointerdown",function(e){
 wrap.addEventListener("pointermove",function(e){
   if(e.pointerType==="touch" && touchPts.has(e.pointerId)){
     touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
-    if(touchGesture){ gestureStep(); return; }
+    if(touchGesture){ e.preventDefault(); queueGesture(); return; }
   }
   if(touchGesture) return;
   /* Space pressed in the middle of a stroke: the drag becomes a pan
@@ -4057,7 +4170,7 @@ function endStroke(e){
   if(e && e.pointerType==="touch"){
     touchPts.delete(e.pointerId);
     if(touchGesture){
-      if(touchPts.size<2) touchGesture=null;
+      gesturePointerGone();
       return; /* the gesture owned this pointer: no stroke end, no menu */
     }
   }
@@ -4247,19 +4360,17 @@ area.addEventListener("pointerdown",function(e){
   e.preventDefault();
   try{ area.setPointerCapture(e.pointerId); }catch(_){}
   if(touchPts.size===2 && !touchGesture){
-    cancelStrokeForGesture();
-    var g0=gestureMid();
-    touchGesture={d:Math.max(10,g0.d), mx:g0.x, my:g0.y};
+    startGesture();
   }
 });
 area.addEventListener("pointermove",function(e){
   if(e.pointerType!=="touch" || wrap.contains(e.target)) return;
   if(touchPts.has(e.pointerId)) touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
-  if(touchGesture && touchPts.size>=2) gestureStep();
+  if(touchGesture && touchPts.size>=2) queueGesture();
 });
 function areaTouchEnd(e){
   if(e.pointerType!=="touch") return;
-  if(touchPts.delete(e.pointerId) && touchPts.size<2) touchGesture=null;
+  if(touchPts.delete(e.pointerId)) gesturePointerGone();
 }
 area.addEventListener("pointerup",areaTouchEnd);
 area.addEventListener("pointercancel",areaTouchEnd);
@@ -4496,8 +4607,8 @@ function doReplace(all){
   if(repFrom===repTo){ toast("置換元と置換先が同じ色です"); return; }
   pushHistory();
   var n=0;
-  if(all) frames.forEach(function(fr){ eachNode(fr.layers,function(m){ if(m.type==="layer") n+=replaceInData(m.data,repFrom,repTo); }); });
-  else eachNode(frames[curFrame].layers,function(m){ if(m.type==="layer") n+=replaceInData(m.data,repFrom,repTo); });
+  if(all) frames.forEach(function(fr){ eachNode(fr.layers,function(m){ if(m.type==="layer") n+=replaceInLayer(m,repFrom,repTo); }); });
+  else eachNode(frames[curFrame].layers,function(m){ if(m.type==="layer") n+=replaceInLayer(m,repFrom,repTo); });
   addRecent(repTo); renderAll();
   toast(n? (repFrom+" → "+repTo+" に "+n+"px 置き換えました") : "その色は使われていませんでした");
 }
@@ -4774,10 +4885,12 @@ function nodeSigOf(n){
 function compositeNodeCached(n){
   var sig=nodeSigOf(n);
   var ent=nodeCache.get(n);
-  /* signature-only validity, same invariant as flattenFrameA */
-  if(ent && ent.sig===sig){ ent.epoch=flatEpoch; return ent.res; }
+  /* signature AND currency, same invariant as flattenFrameA: an
+     older-epoch entry is reused only when the sampled data
+     checksum proves the node's pixels are unchanged */
+  if(ent && ent.sig===sig && (ent.epoch===flatEpoch || dataSumInto([n],7)===ent.sum)){ ent.epoch=flatEpoch; return ent.res; }
   var res=compositeListA([n], true);
-  nodeCache.set(n, {sig:sig, epoch:flatEpoch, res:res});
+  nodeCache.set(n, {sig:sig, epoch:flatEpoch, sum:dataSumInto([n],7), res:res});
   return res;
 }
 var layerSig="", layerPainters=[];
@@ -5270,6 +5383,8 @@ $("fxBakeBtn2").addEventListener("click",function(){
     n.fx=defaultEffects();
   } else if(n.type==="layer"){
     n.data=applyFx(n.data, n.fx);
+    n._v=(n._v||0)+1; /* data swapped in place: announce it like every other direct write */
+    n._bbD=null;
     n.fx=defaultEffects();
   } else {
     var flat=applyFx(compositeList(n.children,true), n.fx);
