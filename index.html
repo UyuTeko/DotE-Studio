@@ -2188,6 +2188,11 @@ function layoutWrap(){
   var ws=wrapSize();
   wrap.style.left=((r.width-ws.w)/2+panX)+"px";
   wrap.style.top=((r.height-ws.h)/2+panY)+"px";
+  /* the grid / selection overlays cover only the visible window of
+     the wrap (see sizeHiRes), and panning slides that window, so
+     every reposition re-clips them; sizeHiRes is rAF-coalesced, so
+     calling it on every pan frame costs one redraw per frame */
+  sizeHiRes();
 }
 function clampPan(){
   var r=areaRect(); if(!r.width) return;
@@ -2229,11 +2234,12 @@ function fitZoom(){
   var s=Math.max(120, Math.min((r.width-18)*m/vd.w, (r.height-18)*m/vd.h));
   setZoom(s,false);
 }
-/* Hi-res overlay canvases are sized to the *displayed* pixel size so grid
-   lines land exactly on device pixels and stay crisp at any zoom.
-   The resize + redraw is coalesced through requestAnimationFrame:
-   a wheel-zoom gesture fires dozens of events, and re-laying-out the
-   grid canvases for every tick was a visible source of zoom lag. */
+/* Hi-res overlay canvases (grid / selection) are sized to the
+   *displayed* pixel size so grid lines land exactly on device pixels
+   and stay crisp. The resize + redraw is coalesced through
+   requestAnimationFrame: a wheel-zoom gesture fires dozens of
+   events, and re-laying-out the grid canvases for every tick was a
+   visible source of zoom lag. */
 var hiResQueued=false;
 /* The grid / selection overlays are the only surfaces sized by the
    device pixel ratio (the picture itself is a W×H pixel canvas).
@@ -2244,30 +2250,60 @@ var hiResQueued=false;
    high-DPR tablets while the lines stay crisp. */
 function effDpr(){ return Math.min(window.devicePixelRatio||1, 2); }
 /* The DPR the overlay canvases were actually sized with:
-   sizeHiRes lowers it past the cap below, and drawGrid / drawSel
+   sizeHiRes lowers it past the budget below, and drawGrid / drawSel
    must draw with the same transform or their lines would land at
    the wrong scale. */
 var overlayDpr=0;
+/* The visible window of the wrap, in wrap CSS px: the overlay
+   canvases cover ONLY this window (positioned inside the wrap at
+   overlayOX / overlayOY), and drawGrid / drawSel translate by it so
+   all their drawing stays in wrap coordinates.
+   Why: the overlays used to span the whole wrap. The zoom ceiling
+   is per-cell (~72 display px per dot), so at high zoom the wrap is
+   thousands of CSS px across and the two overlays held up to
+   8192×8192 device px EACH — over 500MB of canvas bitmap that a
+   canvas always allocates in full, visible or not. On tablets that
+   blew past the browser's canvas-memory budget: the moment the
+   zoom finished everything looked fine, but every later redraw —
+   drawSel clears the whole bitmap on every hover / pointer move —
+   and every composite of those giant layers ran at software-fallback
+   speed, so the app started dropping frames soon after zooming and
+   never recovered while zoomed in. The visible window is at most
+   the stage's own size, so the bitmaps stay a few megapixels at any
+   zoom, and the per-move clear / redraw cost no longer scales with
+   the zoom level at all. */
+var overlayOX=0, overlayOY=0, overlayVW=0, overlayVH=0;
 function sizeHiRes(){
   if(hiResQueued) return;
   hiResQueued=true;
   requestAnimationFrame(function(){
     hiResQueued=false;
-    var w=wrap.clientWidth, h=wrap.clientHeight;
-    if(!w||!h) return;
+    var ws=wrapSize();
+    if(!wrap.clientWidth || !ws.w || !ws.h) return;
+    var ar=areaRect();
+    /* the wrap's offset inside the stage, from the same math
+       layoutWrap writes (no layout read needed) */
+    var wl=(ar.width-ws.w)/2+panX, wt=(ar.height-ws.h)/2+panY;
+    /* visible window of the wrap, in wrap CSS px; with no stage
+       size yet, fall back to the whole wrap (the pre-clip sizing) */
+    var vx0=0, vy0=0, vw=ws.w, vh=ws.h;
+    if(ar.width && ar.height){
+      vx0=Math.max(0, Math.min(ws.w, Math.floor(-wl)));
+      vy0=Math.max(0, Math.min(ws.h, Math.floor(-wt)));
+      vw=Math.max(1, Math.min(ws.w, Math.ceil(ar.width-wl))-vx0);
+      vh=Math.max(1, Math.min(ws.h, Math.ceil(ar.height-wt))-vy0);
+    }
+    overlayOX=vx0; overlayOY=vy0; overlayVW=vw; overlayVH=vh;
     var dpr=effDpr();
-    /* at extreme zooms the wrap itself is thousands of px across;
-       sizing the overlays at full DPR then allocates tens of
-       millions of pixels on every zoom frame — a hard hitch, and
-       past the browser's canvas-size limit a silent failure. The
-       picture canvas is not sized by this path and stays exact;
-       only the hairline grid / selection overlays soften slightly
-       at those zooms. */
-    if(w*dpr>8192) dpr=8192/w;
-    if(h*dpr>8192) dpr=Math.min(dpr, 8192/h);
+    /* total-area budget as a final safety net for very large
+       desktop stages: ~8.4M device px (≈33MB) per overlay */
+    var MAXPX=8388608;
+    if(vw*vh*dpr*dpr>MAXPX) dpr=Math.sqrt(MAXPX/(vw*vh));
     overlayDpr=dpr;
     [gridC,selC].forEach(function(c){
-      var nw=Math.round(w*dpr), nh=Math.round(h*dpr);
+      c.style.left=vx0+"px"; c.style.top=vy0+"px";
+      c.style.width=vw+"px"; c.style.height=vh+"px";
+      var nw=Math.max(1,Math.round(vw*dpr)), nh=Math.max(1,Math.round(vh*dpr));
       if(c.width!==nw) c.width=nw;
       if(c.height!==nh) c.height=nh;
     });
@@ -2277,8 +2313,13 @@ function sizeHiRes(){
 function drawGrid(){
   var w=wrap.clientWidth, h=wrap.clientHeight; if(!w) return;
   var dpr=overlayDpr||effDpr();
-  gctx.setTransform(dpr,0,0,dpr,0,0);
-  gctx.clearRect(0,0,w,h);
+  /* the canvas covers only the visible window of the wrap (see
+     sizeHiRes): translate by the window's offset so every
+     coordinate below stays in wrap space, and clear just the
+     window — clearing a whole-wrap bitmap on every redraw was the
+     sustained post-zoom frame drop on tablets */
+  gctx.setTransform(dpr,0,0,dpr,-overlayOX*dpr,-overlayOY*dpr);
+  gctx.clearRect(overlayOX,overlayOY,overlayVW||w,overlayVH||h);
   if(!showGrid) return;
   var dark = isDarkTheme();
   var vd=viewDims();
@@ -2309,17 +2350,25 @@ function drawGrid(){
      sub-pixel mush — hundreds of strokes for nothing visible; the
      8-cell major grid still gives the scale. Skipping them is one
      of the big-canvas zoom/pan wins. */
+  /* only the lines inside the visible window are built: at high
+     zoom the wrap spans thousands of cells the user cannot see,
+     and path-building all of them on every redraw was pure waste */
+  var vx1=overlayOX+(overlayVW||w), vy1=overlayOY+(overlayVH||h);
   if(stepX>=3 && stepY>=3){
     gctx.strokeStyle = minor;
     gctx.beginPath();
-    for(var i=1;i<vd.w;i++) seg(i*stepX,0,i*stepX,h);
-    for(var j=1;j<vd.h;j++) seg(0,j*stepY,w,j*stepY);
+    var iA=Math.max(1,Math.ceil(overlayOX/stepX)), iB=Math.min(vd.w-1,Math.floor(vx1/stepX));
+    for(var i=iA;i<=iB;i++) seg(i*stepX,0,i*stepX,h);
+    var jA=Math.max(1,Math.ceil(overlayOY/stepY)), jB=Math.min(vd.h-1,Math.floor(vy1/stepY));
+    for(var j=jA;j<=jB;j++) seg(0,j*stepY,w,j*stepY);
     gctx.stroke();
   }
   gctx.strokeStyle = major;
   gctx.beginPath();
-  for(var a=0;a<=vd.w;a+=8) seg(a*stepX,0,a*stepX,h);
-  for(var b=0;b<=vd.h;b+=8) seg(0,b*stepY,w,b*stepY);
+  var aA=Math.ceil(Math.max(0,Math.ceil(overlayOX/stepX))/8)*8, aB=Math.min(vd.w,Math.floor(Math.floor(vx1/stepX)/8)*8);
+  for(var a=aA;a<=aB;a+=8) seg(a*stepX,0,a*stepX,h);
+  var bA=Math.ceil(Math.max(0,Math.ceil(overlayOY/stepY))/8)*8, bB=Math.min(vd.h,Math.floor(Math.floor(vy1/stepY)/8)*8);
+  for(var b=bA;b<=bB;b+=8) seg(0,b*stepY,w,b*stepY);
   gctx.stroke();
   if(viewMode==="sheet"){
     /* frame dividers: bold accent lines where one frame ends and the
@@ -2333,14 +2382,22 @@ function drawGrid(){
   gctx.strokeStyle = frame;
   gctx.strokeRect(.5,.5,w-1,h-1);
 }
+/* drawSel now also runs on pan frames (the overlay window slides
+   with the view), so its status-bar text writes are cached: setting
+   textContent to the same string still replaces the text node and
+   dirties layout every frame */
+var lastSelLabel=null, lastSelInfo=null;
 function drawSel(){
   var w=wrap.clientWidth, h=wrap.clientHeight; if(!w) return;
   var dpr=overlayDpr||effDpr();
-  sctx.setTransform(dpr,0,0,dpr,0,0);
-  sctx.clearRect(0,0,w,h);
+  /* same visible-window clipping as drawGrid: translate into wrap
+     coordinates and clear only the window the canvas covers */
+  sctx.setTransform(dpr,0,0,dpr,-overlayOX*dpr,-overlayOY*dpr);
+  sctx.clearRect(overlayOX,overlayOY,overlayVW||w,overlayVH||h);
   var label = sel ? ((sel.x1-sel.x0+1)+" × "+(sel.y1-sel.y0+1)) : "なし";
-  $("selLabel").textContent=label;
-  $("selInfo").textContent = sel ? ("x "+sel.x0+"〜"+sel.x1+" ・ y "+sel.y0+"〜"+sel.y1+"（"+label+(sel.mask?" ・ 投げ縄":"")+"）") : "未選択";
+  if(label!==lastSelLabel){ lastSelLabel=label; $("selLabel").textContent=label; }
+  var info = sel ? ("x "+sel.x0+"〜"+sel.x1+" ・ y "+sel.y0+"〜"+sel.y1+"（"+label+(sel.mask?" ・ 投げ縄":"")+"）") : "未選択";
+  if(info!==lastSelInfo){ lastSelInfo=info; $("selInfo").textContent=info; }
   $("selPanel").classList.toggle("show", tool==="select" || !!sel);
   var vd2=viewDims();
   var stepX=w/vd2.w, stepY=h/vd2.h;
