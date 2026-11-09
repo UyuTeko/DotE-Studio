@@ -162,7 +162,10 @@ label{font-size:11px;color:var(--ink2);display:block;margin-bottom:3px}
 .canvas-wrap canvas.hires{image-rendering:auto}
 #gridCanvas,#selCanvas,#mainCanvas,#overlayCanvas{pointer-events:none}
 #selCanvas{z-index:3}#gridCanvas{z-index:2}#overlayCanvas{z-index:1}
-.statusbar{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin-top:8px;font-size:12px;color:var(--ink2);flex:none}
+.statusbar{display:flex;flex-wrap:nowrap;gap:4px 14px;align-items:center;margin-top:8px;font-size:12px;color:var(--ink2);flex:none;white-space:nowrap;overflow:hidden;min-width:0}
+.statusbar>span{overflow:hidden;text-overflow:clip;flex:0 1 auto;min-width:0}
+.statusbar>span:nth-child(-n+2){flex:none}
+.statusbar .zoom-ctl{flex:none}
 .statusbar b{color:var(--ink);font-weight:400}
 .statusbar .zoom-ctl{display:flex;align-items:center;gap:6px;margin-left:auto;color:var(--ink)}
 .statusbar input[type="range"]{width:120px}
@@ -286,6 +289,7 @@ input[type="number"]{background:var(--panel);border:2px solid var(--line);paddin
 /* tool shortcut badges */
 .tool-btn{position:relative}
 .tool-key{position:absolute;top:2px;right:3px;font-size:9px;line-height:1.3;color:var(--ink2);border:1px solid var(--line-soft);background:var(--panel);padding:0 3px}
+.tool-key-l{position:absolute;top:2px;left:3px;font-size:9px;line-height:1.3;color:var(--ink2);border:1px solid var(--line-soft);background:var(--panel);padding:0 3px}
 
 /* mirror tool panel */
 #mirrorPanel{display:none}
@@ -362,15 +366,24 @@ textarea.uri-out{width:100%;background:var(--panel);border:2px solid var(--line)
 input[type="color"].color-face{width:52px;flex:none;height:auto;min-height:46px;padding:3px;box-shadow:var(--shadow-sm)}
 input[type="color"].rep-face{width:34px;height:30px;flex:none;padding:2px;box-shadow:var(--shadow-sm)}
 
-/* numeric partners for sliders */
-.num-inp{width:66px;flex:none;padding:3px 5px;font-size:12px}
-.fx-num{width:52px;flex:none;background:var(--panel);border:2px solid var(--line);padding:2px 4px;font-size:12px}
-.statusbar input[type="number"].num-inp{width:74px}
+/* numeric partners for sliders: sized to the digits they actually hold */
+.num-inp{width:56px;flex:none;padding:3px 5px;font-size:12px}
+.fx-num{width:50px;flex:none;background:var(--panel);border:2px solid var(--line);padding:2px 4px;font-size:12px}
+.statusbar input[type="number"].num-inp{width:66px}
 
 /* drag & drop reordering */
 [draggable="true"]{cursor:grab}
 .drag-src{opacity:.4}
-.drag-over{outline:3px dashed var(--blue);outline-offset:-1px}
+/* insertion-line drop indicator: a dashed line at the exact spot the
+   dragged item will land (before / after the target), never a box
+   around the target itself */
+.ins-t,.ins-b,.ins-l,.ins-r{position:relative}
+.ins-t::before,.ins-b::before{content:"";position:absolute;left:-3px;right:-3px;height:0;border-top:3px dashed var(--blue);z-index:8;pointer-events:none}
+.ins-t::before{top:-4px}
+.ins-b::before{bottom:-4px}
+.ins-l::before,.ins-r::before{content:"";position:absolute;top:-3px;bottom:-3px;width:0;border-left:3px dashed var(--blue);z-index:8;pointer-events:none}
+.ins-l::before{left:-5px}
+.ins-r::before{right:-5px}
 .fgroup-chip.is-sel{outline:3px solid var(--accent);outline-offset:1px;background:var(--panel)}
 .fxp-row .fx-grip{cursor:grab;color:var(--ink2);font-size:13px;flex:none;padding:0 2px;user-select:none}
 
@@ -383,7 +396,7 @@ input[type="color"].rep-face{width:34px;height:30px;flex:none;padding:2px;box-sh
 
 /* top-bar sprite-sheet column / row inputs (next to the size select) */
 .tb-num-label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink2);margin:0;white-space:nowrap}
-input[type="number"].tb-num{width:54px;padding:3px 5px;font-size:13px}
+input[type="number"].tb-num{width:44px;padding:3px 5px;font-size:13px}
 /* panning can start anywhere in the canvas area, not only on the canvas */
 .canvas-area.panning{cursor:grabbing}
 .stage-head .seg{flex:none}
@@ -523,7 +536,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
 .imp-slider{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);margin-bottom:5px}
 .imp-slider span{flex:none;width:64px}
 .imp-slider input[type="range"]{flex:1;min-width:0}
-.imp-slider .fx-num{width:56px}
+.imp-slider .fx-num{width:50px}
 @media (max-width:640px){.imp-layout{flex-direction:column}.imp-side{width:100%}}
 
 @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
@@ -558,7 +571,7 @@ body{touch-action:manipulation}
 .home-thumb img{-webkit-user-drag:none;user-select:none}
 
 /* the whole stage (canvas + its frame) never offers the OS callout */
-.canvas-area{-webkit-touch-callout:none}
+.canvas-area{-webkit-touch-callout:none;touch-action:none}
 .canvas-area canvas{-webkit-touch-callout:none}
 
 /* ===== how-to slides ===== */
@@ -573,9 +586,9 @@ body{touch-action:manipulation}
 .how-dot.is-on{background:var(--accent)}
 .how-count{font-size:12px;color:var(--ink2);flex:none}
 
-/* ===== theme colour swatches (extension) ===== */
-.accent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.accent-sw{border:2px solid var(--line);box-shadow:var(--shadow-sm);padding:0;height:52px;cursor:pointer;position:relative}
+/* ===== theme swatches (extension): each theme is a whole palette ===== */
+.accent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.accent-sw{border:2px solid var(--line);box-shadow:var(--shadow-sm);padding:0;height:56px;cursor:pointer;position:relative}
 .accent-sw span{position:absolute;left:0;right:0;bottom:0;font-size:10px;line-height:1.5;background:var(--panel);color:var(--ink);border-top:2px solid var(--line)}
 .accent-sw.is-on{outline:3px solid var(--ink);outline-offset:1px}
 </style>
@@ -679,7 +692,7 @@ body{touch-action:manipulation}
         <div class="help-txt"><b>Shift+ドラッグ</b>直線は5°刻み／図形は正方形に固定</div>
         <div class="help-txt"><b>直線ツール</b>ドラッグ中は長さと角度が下のステータスバーに出ます</div>
         <div class="help-txt"><b>Ctrl+V（画像）</b>PCでコピーした画像はそのままキャンバスへ貼り付けできます（サイズが違うときは合わせ方の確認が出ます）</div>
-        <div class="help-txt"><b>Shift+選択</b>今の選択範囲に追加して選ぶ</div>
+        <div class="help-txt"><b>Shift（範囲選択中）</b>押している間は移動ツールになります。移動は離しても確定せず、別の場所をクリックした位置で完了します</div>
         <div class="help-txt"><b>Alt+ドラッグ</b>移動ツールで選択範囲を複製しながら移動</div>
         <div class="help-txt"><b>Shift+クリック</b>ペンで前の点から直線を引く</div>
         <div class="help-txt"><b>矢印キー</b>選択範囲の中身を1pxずつ移動</div>
@@ -713,7 +726,7 @@ body{touch-action:manipulation}
       <option value="custom">自由に指定…</option>
     </select>
     <span class="sep"></span>
-    <label class="tb-num-label">列 <input type="number" id="sheetColsInp" class="tb-num" min="1" max="64" value="4" aria-label="スプライトシートの列"></label>
+    <label class="tb-num-label">列 <input type="number" id="sheetColsInp" class="tb-num" min="1" max="64" value="1" aria-label="スプライトシートの列"></label>
     <label class="tb-num-label">行 <input type="number" id="sheetRowsInp" class="tb-num" min="1" max="64" value="1" aria-label="スプライトシートの行"></label>
   </div>
   <div class="save-status" id="saveStatus" title="保存状態"><span id="ssPc">PC：未保存</span><br><span id="ssBr">ブラウザ：未保存</span></div>
@@ -746,13 +759,19 @@ body{touch-action:manipulation}
       </div>
       <div class="home-actions">
         <button class="px-btn primary" id="homeNewBtn">＋ 新規プロジェクト</button>
-        <button class="px-btn teal" id="homeContinueBtn" hidden>続きから</button>
         <button class="px-btn" id="homeOpenFileBtn">PCから開く（.dspx）…</button>
-        <button class="px-btn" id="homeBackBtn">エディタに戻る</button>
         <button class="px-btn" id="homeHowBtn">つかいかた</button>
         <button class="px-btn" id="homeThemeBtn" title="ライトモード／ダークモードを切り替えます">テーマ：自動</button>
         <button class="px-btn" id="homeAccentBtn" hidden>テーマカラー</button>
         <button class="px-btn home-ext-btn" id="homeExtBtn" title="拡張機能の有効・無効を切り替えます">拡張機能</button>
+        <div class="menu" id="menuHomeMore">
+          <button class="menu-btn" data-menu="menuHomeMore" style="border:2px solid var(--line);background:var(--panel);box-shadow:var(--shadow-sm);font-size:13px">その他 ▾</button>
+          <div class="menu-panel" style="left:auto;right:0">
+            <button id="homeBackupBtn">全プロジェクトをバックアップ</button>
+            <button id="homeRestoreBtn">バックアップから復元…</button>
+            <button id="homeSettingsBtn">保存の設定…</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="home-toolbar">
@@ -762,9 +781,6 @@ body{touch-action:manipulation}
         <option value="name">名前順</option>
         <option value="size">サイズ順</option>
       </select>
-      <button class="px-btn" id="homeBackupBtn">全プロジェクトをバックアップ</button>
-      <button class="px-btn" id="homeRestoreBtn">バックアップから復元…</button>
-      <button class="px-btn" id="homeSettingsBtn">保存の設定…</button>
     </div>
     <div class="home-stats" id="homeStats"></div>
     <div class="storage-bar" id="storageBar" hidden><i></i></div>
@@ -786,12 +802,12 @@ body{touch-action:manipulation}
         <button class="tool-btn is-on" data-tool="pen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5L17 3z"/></svg>ペン<span class="tool-key">B</span></button>
         <button class="tool-btn" data-tool="eraser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 21l-4-4L16 4l5 5-9 9H7z"/><path d="M7 21h14"/></svg>消しゴム<span class="tool-key">E</span></button>
         <button class="tool-btn" data-tool="fill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l7-7 7 7-7 7z"/><path d="M12 18v3"/></svg>塗りつぶし<span class="tool-key">G</span></button>
-        <button class="tool-btn" data-tool="picker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2l4 4-3 3-4-4z"/><path d="M15 5L5 15l-2 6 6-2L19 9"/></svg>スポイト<span class="tool-key">I</span></button>
+        <button class="tool-btn" data-tool="picker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2l4 4-3 3-4-4z"/><path d="M15 5L5 15l-2 6 6-2L19 9"/></svg>スポイト<span class="tool-key">I</span><span class="tool-key-l">Alt</span></button>
         <button class="tool-btn" data-tool="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20L20 4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>直線<span class="tool-key">L</span></button>
         <button class="tool-btn" data-tool="shape"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="11" height="10"/><circle cx="16" cy="16" r="5"/></svg>図形<span class="tool-key">R</span></button>
         <button class="tool-btn" data-tool="select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3"><rect x="4" y="4" width="16" height="16"/></svg>範囲選択<span class="tool-key">V</span></button>
         <button class="tool-btn" data-tool="replace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>色置き換え<span class="tool-key">X</span></button>
-        <button class="tool-btn" data-tool="move"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg>移動<span class="tool-key">M</span></button>
+        <button class="tool-btn" data-tool="move"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg>移動<span class="tool-key">M</span><span class="tool-key-l">Shift</span></button>
         <button class="tool-btn" data-tool="mirror"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18" stroke-dasharray="3 3"/><path d="M8 8L4 12l4 4M16 8l4 4-4 4"/></svg>ミラー<span class="tool-key">Y</span></button>
         <button class="tool-btn" data-tool="text" id="toolTextBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5h14M12 5v14"/><path d="M9 19h6"/></svg>文字<span class="tool-key">T</span></button>
       </div>
@@ -891,7 +907,7 @@ body{touch-action:manipulation}
         <button class="px-btn" id="selAllBtn">全て選択</button>
         <button class="px-btn" id="selClearBtn">選択解除</button>
       </div>
-      <p class="sel-mode-note">Shift+ドラッグで今の選択に追加。移動ツールで Alt+ドラッグすると複製しながら移動。矢印キーで中身を1pxずつ移動できます。</p>
+      <p class="sel-mode-note">Shiftを押している間は移動ツールになります（そのままドラッグで中身が浮き、別の場所をクリックした位置で移動が完了します）。移動ツールで Alt+ドラッグすると複製しながら移動。矢印キーで中身を1pxずつ移動できます。</p>
     </section>
 
     <section class="panel" aria-label="レイヤー">
@@ -957,7 +973,7 @@ body{touch-action:manipulation}
           <div class="row">
             <label style="margin:0">速さ <span id="fpsLabel">8</span>FPS</label>
             <input type="range" id="fpsRange" min="1" max="24" value="8" style="width:80px">
-            <input type="number" class="num-inp" id="fpsNum" min="1" max="24" value="8" style="width:52px" aria-label="速さ（数値）">
+            <input type="number" class="num-inp" id="fpsNum" min="1" max="24" value="8" style="width:46px" aria-label="速さ（数値）">
             <button class="px-btn is-on" id="playBtn">▶ 再生</button>
           </div>
         </div>
@@ -1013,6 +1029,9 @@ body{touch-action:manipulation}
 
     <section class="panel used-panel" aria-label="使用色一覧">
       <h2>使用色一覧 <span class="h2-note" id="usedCount">0色</span></h2>
+      <div class="mini-row" style="margin-bottom:6px">
+        <button class="px-btn" id="usedFxBtn" style="font-size:11px;padding:3px 8px" title="ONにすると、エフェクトをかけた後の見た目の色で集計します">エフェクトを反映した色：OFF</button>
+      </div>
       <div class="used-list" id="usedList"><p class="note" style="margin:2px">まだ色が使われていません。</p></div>
       <p class="note">クリックでその色を選択。「置換元」で色置き換えの元にセットします。今のフレーム基準です。</p>
     </section>
@@ -1085,7 +1104,7 @@ body{touch-action:manipulation}
     <div class="exp-row" id="expSheetRow">
       <label>シート設定</label>
       <div class="mini-row">
-        <div style="flex:1"><label>列</label><input type="number" id="expCols" min="1" max="64" value="4"></div>
+        <div style="flex:1"><label>列</label><input type="number" id="expCols" min="1" max="64" value="1"></div>
         <div style="flex:1"><label>行</label><input type="number" id="expRows" min="1" max="64" value="1"></div>
         <div style="flex:1"><label>フレーム間の余白 px</label><input type="number" id="expPad" min="0" max="128" value="0"></div>
       </div>
@@ -1153,7 +1172,7 @@ body{touch-action:manipulation}
     <div class="exp-row" id="impSheetRow" hidden>
       <label>スプライトシートの分割設定</label>
       <div class="mini-row">
-        <div style="flex:1"><label>列</label><input type="number" id="impCols" min="1" max="64" value="4"></div>
+        <div style="flex:1"><label>列</label><input type="number" id="impCols" min="1" max="64" value="1"></div>
         <div style="flex:1"><label>行</label><input type="number" id="impRows" min="1" max="64" value="1"></div>
       </div>
       <div class="mini-row mt">
@@ -1421,7 +1440,7 @@ body{touch-action:manipulation}
           <path d="M282 108 a17 17 0 1 1 -12 -29 a13 13 0 1 0 12 29z" style="fill:var(--blue)" stroke="currentColor" stroke-width="3"/>
           <text x="228" y="140" font-size="11" fill="currentColor" text-anchor="middle">ライト／ダーク切替</text>
           <circle cx="186" cy="118" r="8" style="fill:var(--accent)"/><circle cx="210" cy="118" r="8" style="fill:var(--teal)"/><circle cx="234" cy="118" r="8" style="fill:var(--blue)"/><circle cx="258" cy="118" r="8" style="fill:var(--danger)"/>
-          <text x="228" y="164" font-size="11" fill="currentColor" text-anchor="middle">テーマカラー拡張で色も変更可</text>
+          <text x="228" y="164" font-size="11" fill="currentColor" text-anchor="middle">テーマカラー拡張で全体の配色も変更可</text>
         </svg>
       </div>
     </div>
@@ -1442,7 +1461,7 @@ body{touch-action:manipulation}
 <div class="exp-backdrop" id="accentBackdrop" hidden>
   <div class="panel exp-dialog" role="dialog" aria-label="テーマカラー" style="width:min(440px,94vw)">
     <h2>テーマカラー</h2>
-    <p class="note" style="margin-top:0">アプリのアクセントカラーを選びます。拡張機能「テーマカラー」がONのときだけ反映されます。</p>
+    <p class="note" style="margin-top:0">アプリ全体の配色テーマを選びます。背景・パネル・文字・アクセントなど、色の組み合わせがまとめて切り替わります（ライト／ダークそれぞれに合わせた配色になります）。拡張機能「テーマカラー」がONのときだけ反映されます。</p>
     <div class="accent-grid" id="accentGrid"></div>
     <div class="mini-row mt">
       <button class="px-btn" id="accentResetBtn">初期の色に戻す</button>
@@ -1511,13 +1530,15 @@ var pendingRight=null;
 var hoverCell=null;
 /* pen: last plotted point, for Shift+click straight lines */
 var lastPlotPos=null, pointerShift=false;
+/* select tool + Shift held: the move tool is borrowed until release */
+var shiftTempMove=false;
 /* selected frame group (same idea as selecting a layer group) */
 var selFGroupId=null;
 /* zoom / pan */
 var stagePx=480, manualZoom=false, panDrag=null;
 var panX=0, panY=0;
 /* export settings */
-var expKind="single", expBgMode="transp", expBgColor="#ffffff", expCols=4, expRows=1, expPad=0, expFx=true, expOut="dl";
+var expKind="single", expBgMode="transp", expBgColor="#ffffff", expCols=1, expRows=1, expPad=0, expFx=true, expOut="dl";
 /* replace */
 var repFrom=null, repTo="#26221c", repPicking=false;
 /* flattened (composited) current frame, refreshed by render() */
@@ -1532,9 +1553,29 @@ function blank(){ var a=new Array(W*H); for(var i=0;i<a.length;i++) a[i]=null; r
    and opacity, Photoshop-style. List order is display order: index 0
    is the TOP layer; compositing walks the list back to front. */
 var layerSeq=1;
-function defaultEffects(){ return {outlineOn:false, outlineColor:"#26221c", outlineSize:1, shadowOn:false, shadowColor:"#9c9284", shadowX:2, shadowY:2, offsetX:0, offsetY:0, bright:0, contrast:0, hue:0, sat:0, invertOn:false, grayOn:false, sepiaOn:false, posterizeOn:false, posterizeLevels:4, blurOn:false, noise:0, added:[]}; }
-/* Which effects are "added" to an object, Photoshop smart-filter style.
-   Old saves have no list: derive it from whichever effects are active. */
+/* Effects are a LIST of instances: the same kind can be added any
+   number of times, and they apply in list order (top first). Every
+   kind carries its own adjustable parameters. Old saves stored one
+   flat parameter set per kind (plus an "added" id list); fxList()
+   migrates those into instances on first use. */
+var FX_DEFS=[
+  {id:"outline", label:"縁取り", params:{outlineColor:"#26221c", outlineSize:1}, controls:[{t:"color", k:"outlineColor", label:"色"}, {t:"range", k:"outlineSize", min:1, max:3, label:"太さ"}]},
+  {id:"shadow", label:"影", params:{shadowColor:"#9c9284", shadowX:2, shadowY:2}, controls:[{t:"color", k:"shadowColor", label:"色"}, {t:"range", k:"shadowX", min:-8, max:8, label:"→"}, {t:"range", k:"shadowY", min:-8, max:8, label:"↓"}]},
+  {id:"offset", label:"ずらし", params:{offsetX:2, offsetY:0}, controls:[{t:"range", k:"offsetX", min:-16, max:16, label:"→"}, {t:"range", k:"offsetY", min:-16, max:16, label:"↓"}]},
+  {id:"bright", label:"明るさ", params:{bright:20}, controls:[{t:"range", k:"bright", min:-100, max:100, label:""}]},
+  {id:"contrast", label:"コントラスト", params:{contrast:20}, controls:[{t:"range", k:"contrast", min:-100, max:100, label:""}]},
+  {id:"hue", label:"色相シフト", params:{hue:30}, controls:[{t:"range", k:"hue", min:-180, max:180, label:"°"}]},
+  {id:"sat", label:"彩度", params:{sat:20}, controls:[{t:"range", k:"sat", min:-100, max:100, label:""}]},
+  {id:"invert", label:"色反転", params:{invCh:"all"}, controls:[{t:"select", k:"invCh", label:"反転する色", options:[["all","全て"],["r","赤"],["g","緑"],["b","青"]]}]},
+  {id:"gray", label:"グレースケール", params:{grayAmt:100}, controls:[{t:"range", k:"grayAmt", min:0, max:100, label:"強さ"}]},
+  {id:"sepia", label:"セピア", params:{sepiaAmt:100}, controls:[{t:"range", k:"sepiaAmt", min:0, max:100, label:"強さ"}]},
+  {id:"posterize", label:"ポスタリゼーション（減色）", params:{posterizeLevels:4}, controls:[{t:"range", k:"posterizeLevels", min:2, max:8, label:"段階"}]},
+  {id:"blur", label:"ぼかし", params:{blurAmt:1}, controls:[{t:"range", k:"blurAmt", min:1, max:3, label:"強さ"}]},
+  {id:"noise", label:"ノイズ", params:{noise:20, noiseColor:false}, controls:[{t:"range", k:"noise", min:0, max:100, label:"量"}, {t:"check", k:"noiseColor", label:"カラーノイズ"}]}
+];
+function fxDef(id){ for(var i=0;i<FX_DEFS.length;i++) if(FX_DEFS[i].id===id) return FX_DEFS[i]; return null; }
+function defaultEffects(){ return {list:[]}; }
+/* Which effects were "added" in an old flat save, in application order. */
 function deriveAdded(fx){
   var a=[];
   if(!fx) return a;
@@ -1553,10 +1594,35 @@ function deriveAdded(fx){
   if(fx.noise>0) a.push("noise");
   return a;
 }
+/* Build the instance list for an fx object, migrating the old flat
+   format (per-kind fields + "added") when no list exists yet. */
+function fxList(fx){
+  if(!fx) return [];
+  if(Array.isArray(fx.list)) return fx.list;
+  var ids = Array.isArray(fx.added)? fx.added.slice() : deriveAdded(fx);
+  var toggleKey={outline:"outlineOn", shadow:"shadowOn", invert:"invertOn", gray:"grayOn", sepia:"sepiaOn", posterize:"posterizeOn", blur:"blurOn"};
+  var list=[];
+  ids.forEach(function(id){
+    var def=fxDef(id); if(!def) return;
+    var params={};
+    Object.keys(def.params).forEach(function(k){ params[k]=(fx[k]!=null)? fx[k] : def.params[k]; });
+    var on = toggleKey[id]? !!fx[toggleKey[id]] : true;
+    list.push({id:id, on:on, params:params});
+  });
+  fx.list=list;
+  return list;
+}
 function saneFx(raw){
-  var had = raw && Array.isArray(raw.added);
-  var fx=Object.assign(defaultEffects(), raw||{});
-  if(!had) fx.added=deriveAdded(fx);
+  if(!raw || typeof raw!=="object") return defaultEffects();
+  var fx=Object.assign({}, raw);
+  if(Array.isArray(fx.list)){
+    fx.list=fx.list.filter(function(inst){ return inst && fxDef(inst.id); }).map(function(inst){
+      var def=fxDef(inst.id);
+      return {id:inst.id, on:inst.on!==false, params:Object.assign({}, def.params, inst.params||{})};
+    });
+  } else {
+    fx.list=fxList(fx);
+  }
   return fx;
 }
 function newLayer(name, data){ return {id:layerSeq++, name:name||"レイヤー", type:"layer", data:data||blank(), visible:true, opacity:1, fx:defaultEffects()}; }
@@ -1595,8 +1661,8 @@ function activeNode(){
 }
 /* The layer that drawing lands on: the active layer, or (when a group is
    selected) its topmost child layer, or any layer as a last resort. */
-function drawLayer(){
-  var fr=frames[curDrawFrameIdx()]; if(!fr) return null;
+function drawLayerOf(fi){
+  var fr=frames[fi]; if(!fr) return null;
   var loc=findNode(fr.layers, fr.active);
   var n=loc? loc.node : fr.layers[0];
   if(!n) return null;
@@ -1608,7 +1674,37 @@ function drawLayer(){
   eachNode(fr.layers,function(m){ if(!any && m.type==="layer") any=m; });
   return any;
 }
+function drawLayer(){ return drawLayerOf(curDrawFrameIdx()); }
 function drawData(){ var l=drawLayer(); return l? l.data : blank(); }
+/* ============ "space" coordinates ============
+   Tools work in SPACE coordinates: in normal mode that is simply the
+   current frame's cells; in sprite-sheet mode it is the whole sheet
+   (viewDims), so a stroke, a selection or a move can cross frame
+   boundaries freely and each cell lands in its own frame's draw
+   layer. spaceDims() is the size of that space. */
+function spaceDims(){ return viewDims(); }
+/* Map a space point to {fi, lx, ly} (frame index + frame-local cell),
+   or null when the point is outside every frame (an empty sheet slot
+   or outside the canvas). */
+function spaceFrame(x,y){
+  if(viewMode!=="sheet") return (x>=0 && y>=0 && x<W && y<H)? {fi:curDrawFrameIdx(), lx:x, ly:y} : null;
+  if(x<0 || y<0) return null;
+  var L=sheetLayout();
+  var fi=Math.floor(y/H)*L.cols+Math.floor(x/W);
+  if(fi<0 || fi>=frames.length) return null;
+  return {fi:fi, lx:x-(fi%L.cols)*W, ly:y-Math.floor(fi/L.cols)*H};
+}
+function spaceGet(x,y){
+  var s=spaceFrame(x,y); if(!s) return null;
+  var l=drawLayerOf(s.fi);
+  return l? l.data[s.ly*W+s.lx] : null;
+}
+function spaceSet(x,y,v){
+  var s=spaceFrame(x,y); if(!s) return;
+  var l=drawLayerOf(s.fi);
+  if(l) l.data[s.ly*W+s.lx]=v;
+}
+function spaceIn(x,y){ return !!spaceFrame(x,y); }
 function fixLayerSeq(){
   var mx=0;
   frames.forEach(function(fr){ eachNode(fr.layers,function(n){ if(n.id>mx) mx=n.id; }); });
@@ -1759,6 +1855,11 @@ function syncCanvasSize(resetHistory){
   mainC.width=d.w; mainC.height=d.h; overC.width=d.w; overC.height=d.h;
   prevC.width=W; prevC.height=H;
   $("sizeSel").value = (W===H && $("sizeSel").querySelector('option[value="'+W+'"]')) ? String(W) : "custom";
+  /* re-derive the wrap's CSS size from the (possibly changed) view
+     aspect right away: when the sheet's columns/rows change, the view
+     dims change with them, and skipping this left the on-screen canvas
+     stretched until the view mode was toggled back and forth */
+  applyWrapSize(); layoutWrap();
   sizeHiRes(); renderAll();
   if(resetHistory){ undoStack.length=0; redoStack.length=0; syncUndoBtns(); }
 }
@@ -1883,14 +1984,10 @@ function drawSel(){
   $("selPanel").classList.toggle("show", tool==="select" || !!sel);
   var vd2=viewDims();
   var stepX=w/vd2.w, stepY=h/vd2.h;
-  /* in sheet mode the selection / hover live inside one frame's slot:
-     offset everything by that slot's origin (in cells) */
-  var off=frameOff();
-  var hovOff=off;
-  if(viewMode==="sheet" && hoverFrameIdx!=null){
-    var hL=sheetLayout();
-    hovOff={x:(hoverFrameIdx%hL.cols)*W, y:Math.floor(hoverFrameIdx/hL.cols)*H};
-  }
+  /* selections and the hover cell live in space coordinates, so no
+     per-frame offset is needed in either view mode */
+  var off={x:0,y:0};
+  var hovOff={x:0,y:0};
   /* hover highlight: only the cell under the cursor, tinted with the
      selection colour so it reads as "this is where you are" */
   if(hoverCell && !panDrag){
@@ -1917,8 +2014,8 @@ function drawSel(){
   if(sel.mask){
     /* fill only the actually-selected cells (clipped to the canvas: a
        selection may hang over the edge after a move) */
-    for(var my=Math.max(0,sel.y0);my<=Math.min(H-1,sel.y1);my++) for(var mx=Math.max(0,sel.x0);mx<=Math.min(W-1,sel.x1);mx++)
-      if(sel.mask[my*W+mx]) sctx.fillRect((off.x+mx)*stepX,(off.y+my)*stepY,stepX,stepY);
+    for(var my=Math.max(0,sel.y0);my<=Math.min(vd2.h-1,sel.y1);my++) for(var mx=Math.max(0,sel.x0);mx<=Math.min(vd2.w-1,sel.x1);mx++)
+      if(sel.mask[my*vd2.w+mx]) sctx.fillRect((off.x+mx)*stepX,(off.y+my)*stepY,stepX,stepY);
     /* outline follows the lasso shape itself: one segment per cell edge
        whose neighbour is outside the mask, never the bounding rectangle */
     sctx.beginPath();
@@ -1973,8 +2070,8 @@ function blendHex(d,s,t){ var a=hexToRgb(d), b=hexToRgb(s); return rgbToHex(a[0]
    applyFx() returns a processed copy; stored pixels are never touched
    until the user bakes the effects from the effect popup. */
 function fxActive(fx){
-  return !!fx && (fx.outlineOn||fx.shadowOn||fx.invertOn||fx.grayOn||fx.sepiaOn||fx.blurOn||fx.posterizeOn
-    || fx.offsetX||fx.offsetY||fx.bright||fx.contrast||fx.hue||fx.sat||fx.noise>0);
+  if(!fx) return false;
+  return fxList(fx).some(function(inst){ return inst.on!==false; });
 }
 function blurData(data){
   var out=data.slice();
@@ -1991,29 +2088,31 @@ function blurData(data){
   }
   return out;
 }
-function applyFx(data, fx){
-  if(!fxActive(fx)) return data;
-  var out=data.slice(), i, x, y, v;
-  if(fx.offsetX||fx.offsetY){
-    var sh=blank();
+/* Apply ONE effect instance. Every kind is parameterised. */
+function applyOneFx(data, inst){
+  var p=Object.assign({}, (fxDef(inst.id)||{params:{}}).params, inst.params||{});
+  var out=data, i, x, y, v;
+  if(inst.id==="offset"){
+    if(!p.offsetX && !p.offsetY) return data;
+    out=blank();
     for(y=0;y<H;y++) for(x=0;x<W;x++){
-      v=out[y*W+x]; if(!v) continue;
-      var nx=x+fx.offsetX, ny=y+fx.offsetY;
-      if(nx>=0&&ny>=0&&nx<W&&ny<H) sh[ny*W+nx]=v;
+      v=data[y*W+x]; if(!v) continue;
+      var nx=x+p.offsetX, ny=y+p.offsetY;
+      if(nx>=0&&ny>=0&&nx<W&&ny<H) out[ny*W+nx]=v;
     }
-    out=sh;
+    return out;
   }
-  if(fx.shadowOn){
-    var comp=blank();
+  if(inst.id==="shadow"){
+    out=blank();
     for(y=0;y<H;y++) for(x=0;x<W;x++){
-      if(out[y*W+x]){ var sx=x+fx.shadowX, sy=y+fx.shadowY; if(sx>=0&&sy>=0&&sx<W&&sy<H) comp[sy*W+sx]=fx.shadowColor; }
+      if(data[y*W+x]){ var sx=x+p.shadowX, sy=y+p.shadowY; if(sx>=0&&sy>=0&&sx<W&&sy<H) out[sy*W+sx]=p.shadowColor; }
     }
-    for(i=0;i<out.length;i++) if(out[i]) comp[i]=out[i];
-    out=comp;
+    for(i=0;i<data.length;i++) if(data[i]) out[i]=data[i];
+    return out;
   }
-  if(fx.outlineOn){
-    var occ=out.slice(), res=out.slice();
-    for(var r=0;r<fx.outlineSize;r++){
+  if(inst.id==="outline"){
+    var occ=data.slice(); out=data.slice();
+    for(var r=0;r<p.outlineSize;r++){
       var grown=occ.slice();
       for(y=0;y<H;y++) for(x=0;x<W;x++){
         if(occ[y*W+x]) continue;
@@ -2021,44 +2120,75 @@ function applyFx(data, fx){
           var qx=x+s[0], qy=y+s[1];
           return qx>=0&&qy>=0&&qx<W&&qy<H && occ[qy*W+qx];
         });
-        if(near) grown[y*W+x]=fx.outlineColor;
+        if(near) grown[y*W+x]=p.outlineColor;
       }
       occ=grown;
     }
-    for(i=0;i<res.length;i++) if(!res[i] && occ[i]) res[i]=fx.outlineColor;
-    out=res;
+    for(i=0;i<out.length;i++) if(!out[i] && occ[i]) out[i]=p.outlineColor;
+    return out;
   }
-  if(fx.blurOn) out=blurData(out);
-  var needColor = fx.invertOn||fx.grayOn||fx.sepiaOn||fx.bright||fx.contrast||fx.hue||fx.sat||fx.posterizeOn||fx.noise>0;
-  if(needColor){
-    for(i=0;i<out.length;i++){
-      var c=out[i]; if(!c) continue;
-      var rgb=hexToRgb(c), rr=rgb[0], gg=rgb[1], bb=rgb[2];
-      if(fx.invertOn){ rr=255-rr; gg=255-gg; bb=255-bb; }
-      if(fx.grayOn){ var lum=Math.round(.299*rr+.587*gg+.114*bb); rr=gg=bb=lum; }
-      if(fx.sepiaOn){
-        var sr2=Math.min(255, rr*.393+gg*.769+bb*.189), sg2=Math.min(255, rr*.349+gg*.686+bb*.168), sb2=Math.min(255, rr*.272+gg*.534+bb*.131);
-        rr=sr2; gg=sg2; bb=sb2;
+  if(inst.id==="blur"){
+    out=data;
+    for(var b2=0;b2<Math.max(1,p.blurAmt);b2++) out=blurData(out);
+    return out;
+  }
+  /* the remaining kinds are per-pixel colour operations */
+  out=data.slice();
+  for(i=0;i<out.length;i++){
+    var c=out[i]; if(!c) continue;
+    var rgb=hexToRgb(c), rr=rgb[0], gg=rgb[1], bb=rgb[2];
+    if(inst.id==="invert"){
+      if(p.invCh==="r") rr=255-rr;
+      else if(p.invCh==="g") gg=255-gg;
+      else if(p.invCh==="b") bb=255-bb;
+      else { rr=255-rr; gg=255-gg; bb=255-bb; }
+    } else if(inst.id==="gray"){
+      var lum=Math.round(.299*rr+.587*gg+.114*bb), ga=Math.max(0,Math.min(100,p.grayAmt))/100;
+      rr=Math.round(rr+(lum-rr)*ga); gg=Math.round(gg+(lum-gg)*ga); bb=Math.round(bb+(lum-bb)*ga);
+    } else if(inst.id==="sepia"){
+      var sa=Math.max(0,Math.min(100,p.sepiaAmt))/100;
+      var sr2=Math.min(255, rr*.393+gg*.769+bb*.189), sg2=Math.min(255, rr*.349+gg*.686+bb*.168), sb2=Math.min(255, rr*.272+gg*.534+bb*.131);
+      rr=Math.round(rr+(sr2-rr)*sa); gg=Math.round(gg+(sg2-gg)*sa); bb=Math.round(bb+(sb2-bb)*sa);
+    } else if(inst.id==="hue" || inst.id==="sat"){
+      var hsl=rgbToHsl(rr,gg,bb);
+      var rgb2=hslToRgb(hsl[0]+(inst.id==="hue"? p.hue:0), Math.max(0,Math.min(100, hsl[1]+(inst.id==="sat"? p.sat:0))), hsl[2]);
+      rr=rgb2[0]; gg=rgb2[1]; bb=rgb2[2];
+    } else if(inst.id==="contrast"){
+      var cf=(100+p.contrast)/100; rr=(rr-128)*cf+128; gg=(gg-128)*cf+128; bb=(bb-128)*cf+128;
+    } else if(inst.id==="bright"){
+      rr+=p.bright; gg+=p.bright; bb+=p.bright;
+    } else if(inst.id==="posterize"){
+      var lv=Math.max(2, p.posterizeLevels), st=255/(lv-1);
+      rr=Math.round(rr/st)*st; gg=Math.round(gg/st)*st; bb=Math.round(bb/st)*st;
+    } else if(inst.id==="noise"){
+      if(p.noise>0){
+        if(p.noiseColor){
+          var h1=Math.sin(i*127.1+311.7)*43758.5453, h2=Math.sin(i*269.5+183.3)*28001.8384, h3=Math.sin(i*113.5+419.2)*12543.1234;
+          rr+=((h1-Math.floor(h1))-.5)*2*p.noise;
+          gg+=((h2-Math.floor(h2))-.5)*2*p.noise;
+          bb+=((h3-Math.floor(h3))-.5)*2*p.noise;
+        } else {
+          var hsh=Math.sin(i*127.1+311.7)*43758.5453, rnd=hsh-Math.floor(hsh);
+          var adj=(rnd-.5)*2*p.noise;
+          rr+=adj; gg+=adj; bb+=adj;
+        }
       }
-      if(fx.hue||fx.sat){
-        var hsl=rgbToHsl(rr,gg,bb);
-        var rgb2=hslToRgb(hsl[0]+fx.hue, Math.max(0,Math.min(100, hsl[1]+fx.sat)), hsl[2]);
-        rr=rgb2[0]; gg=rgb2[1]; bb=rgb2[2];
-      }
-      if(fx.contrast){ var cf=(100+fx.contrast)/100; rr=(rr-128)*cf+128; gg=(gg-128)*cf+128; bb=(bb-128)*cf+128; }
-      if(fx.bright){ rr+=fx.bright; gg+=fx.bright; bb+=fx.bright; }
-      if(fx.posterizeOn){
-        var lv=Math.max(2, fx.posterizeLevels), st=255/(lv-1);
-        rr=Math.round(rr/st)*st; gg=Math.round(gg/st)*st; bb=Math.round(bb/st)*st;
-      }
-      if(fx.noise>0){
-        var hsh=Math.sin(i*127.1+311.7)*43758.5453, rnd=hsh-Math.floor(hsh);
-        var adj=(rnd-.5)*2*fx.noise;
-        rr+=adj; gg+=adj; bb+=adj;
-      }
-      out[i]=rgbToHex(rr,gg,bb);
+    } else {
+      return data;
     }
+    out[i]=rgbToHex(rr,gg,bb);
   }
+  return out;
+}
+/* Effects apply in list order: the top instance first, each one
+   transforming the previous one's result. */
+function applyFx(data, fx){
+  if(!fxActive(fx)) return data;
+  var out=data;
+  fxList(fx).forEach(function(inst){
+    if(inst.on===false) return;
+    out=applyOneFx(out, inst);
+  });
   return out;
 }
 
@@ -2183,16 +2313,33 @@ function frameItem(i){
   btn.appendChild(cv);
   item.addEventListener("dragstart",function(e){ dragFrameIdx=i; item.classList.add("drag-src"); if(e.dataTransfer){ e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain","frame");}catch(_){} } });
   item.addEventListener("dragend",function(){ dragFrameIdx=null; renderThumbs(); });
-  item.addEventListener("dragover",function(e){ if(dragFrameIdx==null||dragFrameIdx===i) return; e.preventDefault(); item.classList.add("drag-over"); });
-  item.addEventListener("dragleave",function(){ item.classList.remove("drag-over"); });
-  item.addEventListener("drop",function(e){
-    e.preventDefault(); item.classList.remove("drag-over");
+  /* insertion line: the left half of a frame means "lands before it",
+     the right half "lands after it" — the dashed line sits exactly
+     on that edge */
+  function frameDropBefore(e){
+    var r=item.getBoundingClientRect();
+    return (e.clientX-r.left) < r.width/2;
+  }
+  item.addEventListener("dragover",function(e){
     if(dragFrameIdx==null||dragFrameIdx===i) return;
+    e.preventDefault();
+    var before=frameDropBefore(e);
+    item.classList.toggle("ins-l", before);
+    item.classList.toggle("ins-r", !before);
+  });
+  item.addEventListener("dragleave",function(){ item.classList.remove("ins-l","ins-r"); });
+  item.addEventListener("drop",function(e){
+    e.preventDefault(); item.classList.remove("ins-l","ins-r");
+    if(dragFrameIdx==null||dragFrameIdx===i) return;
+    var before=frameDropBefore(e);
     pushHistory();
     var mv=frames.splice(dragFrameIdx,1)[0];
-    var to=i>dragFrameIdx? i-1 : i;
-    /* dropping onto a frame joins its group (or leaves, if it has none) */
-    mv.gid=frames[to]? frames[to].gid : null;
+    var to=before? i : i+1;
+    if(dragFrameIdx<to) to--;
+    to=Math.max(0, Math.min(frames.length, to));
+    /* landing next to a frame joins its group (or leaves, if it has none) */
+    var nb=frames[Math.min(to, frames.length-1)];
+    mv.gid=nb? nb.gid : null;
     frames.splice(to,0,mv);
     curFrame=to; dragFrameIdx=null;
     renderAll(); toast("フレームを移動しました");
@@ -2241,10 +2388,10 @@ function fgroupChip(g, count){
     renderThumbs();
     if(selFGroupId) toast("フレームグループ「"+g.name+"」を選択しました（「フレームのエフェクト…」でこのグループにかけられます）");
   });
-  d.addEventListener("dragover",function(e){ if(dragFrameIdx==null) return; e.preventDefault(); d.classList.add("drag-over"); });
-  d.addEventListener("dragleave",function(){ d.classList.remove("drag-over"); });
+  d.addEventListener("dragover",function(e){ if(dragFrameIdx==null) return; e.preventDefault(); d.classList.add("ins-b"); });
+  d.addEventListener("dragleave",function(){ d.classList.remove("ins-b"); });
   d.addEventListener("drop",function(e){
-    e.preventDefault(); d.classList.remove("drag-over");
+    e.preventDefault(); d.classList.remove("ins-b");
     if(dragFrameIdx==null) return;
     pushHistory();
     var mv=frames.splice(dragFrameIdx,1)[0];
@@ -2323,9 +2470,18 @@ function cloneFrame(fr){
 }
 
 /* ============ used colors ============ */
+/* OFF (the default): the colours actually painted, before effects.
+   ON: the colours as they end up looking with every effect applied. */
+var usedFx=false;
+$("usedFxBtn").addEventListener("click",function(){
+  usedFx=!usedFx;
+  this.textContent="エフェクトを反映した色："+(usedFx? "ON":"OFF");
+  this.classList.toggle("is-on", usedFx);
+  renderUsedColors();
+});
 function renderUsedColors(){
   var counts={}, order=[];
-  var data=curFlat || flattenFrame(curFrame,true);
+  var data=usedFx? (curFlat || flattenFrame(curFrame,true)) : flattenFrame(curFrame,false);
   for(var i=0;i<data.length;i++){
     var c=data[i]; if(!c) continue;
     if(!(c in counts)){ counts[c]=0; order.push(c); }
@@ -2369,20 +2525,22 @@ function restartPreview(){
 /* ============ drawing primitives ============ */
 function idx(x,y){ return y*W+x; }
 function inBounds(x,y){ return x>=0 && y>=0 && x<W && y<H; }
-function plotRaw(data,x,y,c){
-  if(!inBounds(x,y)) return;
+/* Plot in space coordinates: mirroring and the brush footprint are
+   computed across the whole space (in sheet mode the whole sheet),
+   and every cell is routed to its own frame's draw layer, so a
+   stroke flows across frame boundaries without a seam. */
+function plot(x,y,c){
+  var sd=spaceDims();
   var targets=[[x,y]];
-  if(mirrorX) targets.push([W-1-x,y]);
-  if(mirrorY) targets.push([x,H-1-y]);
-  if(mirrorX&&mirrorY) targets.push([W-1-x,H-1-y]);
+  if(mirrorX) targets.push([sd.w-1-x,y]);
+  if(mirrorY) targets.push([x,sd.h-1-y]);
+  if(mirrorX&&mirrorY) targets.push([sd.w-1-x,sd.h-1-y]);
   targets.forEach(function(t){
     for(var dy=0;dy<brush;dy++) for(var dx=0;dx<brush;dx++){
-      var bx=t[0]+dx-Math.floor(brush/2), by=t[1]+dy-Math.floor(brush/2);
-      if(inBounds(bx,by)) data[idx(bx,by)]=c;
+      spaceSet(t[0]+dx-Math.floor(brush/2), t[1]+dy-Math.floor(brush/2), c);
     }
   });
 }
-function plot(x,y,c){ plotRaw(drawData(),x,y,c); }
 function linePixels(x0,y0,x1,y1){
   var pts=[], dx=Math.abs(x1-x0), dy=Math.abs(y1-y0), sx=x0<x1?1:-1, sy=y0<y1?1:-1, err=dx-dy;
   while(true){ pts.push([x0,y0]); if(x0===x1&&y0===y1) break; var e2=2*err; if(e2>-dy){err-=dy;x0+=sx;} if(e2<dx){err+=dx;y0+=sy;} }
@@ -2481,14 +2639,22 @@ function shapePixels(bb, shape){
   }
   return pts;
 }
+/* Flood fill in space coordinates: in sheet mode the fill flows
+   across frame boundaries like one continuous canvas. The target is
+   read through each frame's draw layer — the same place plot()
+   writes — so what you see respond is what gets filled. */
 function floodFill(x,y,target,repl){
   if(target===repl) return;
-  var data=drawData(), stack=[[x,y]], seen={};
+  if(!spaceIn(x,y)) return;
+  var sd=spaceDims(), stack=[[x,y]], seen=new Uint8Array(sd.w*sd.h);
   while(stack.length){
-    var p=stack.pop(), px=p[0], py=p[1], k=px+","+py;
-    if(!inBounds(px,py)||seen[k]) continue; seen[k]=1;
-    if(data[idx(px,py)]!==target) continue;
-    data[idx(px,py)]=repl;
+    var p=stack.pop(), px=p[0], py=p[1];
+    if(px<0||py<0||px>=sd.w||py>=sd.h) continue;
+    var k=py*sd.w+px;
+    if(seen[k]) continue; seen[k]=1;
+    if(!spaceIn(px,py)) continue;
+    if(spaceGet(px,py)!==target) continue;
+    spaceSet(px,py,repl);
     stack.push([px+1,py],[px-1,py],[px,py+1],[px,py-1]);
   }
 }
@@ -2500,58 +2666,67 @@ function replaceInData(data,from,to){
 
 /* ============ selection helpers ============ */
 function normSel(a,b){ return {x0:Math.min(a.x,b.x), x1:Math.max(a.x,b.x), y0:Math.min(a.y,b.y), y1:Math.max(a.y,b.y)}; }
-function selHas(s,x,y){ return x>=s.x0 && x<=s.x1 && y>=s.y0 && y<=s.y1 && (!s.mask || (x>=0 && y>=0 && x<W && y<H && !!s.mask[y*W+x])); }
-/* Shift a canvas-sized selection mask by (dx,dy); cells that leave the
-   canvas are dropped (selections may hang over the edge while moving). */
+/* Selections live in space coordinates too: in sheet mode a selection
+   can span several frames, and its mask is sized to the whole space. */
+function selHas(s,x,y){
+  if(!(x>=s.x0 && x<=s.x1 && y>=s.y0 && y<=s.y1)) return false;
+  if(!s.mask) return true;
+  var sd=spaceDims();
+  return x>=0 && y>=0 && x<sd.w && y<sd.h && !!s.mask[y*sd.w+x];
+}
+/* Shift a space-sized selection mask by (dx,dy); cells that leave the
+   space are dropped (selections may hang over the edge while moving). */
 function shiftMask(mask,dx,dy){
   if(!mask) return null;
-  var m=new Uint8Array(W*H), any=false;
-  for(var y=0;y<H;y++) for(var x=0;x<W;x++){
-    if(!mask[y*W+x]) continue;
+  var sd=spaceDims();
+  var m=new Uint8Array(sd.w*sd.h), any=false;
+  for(var y=0;y<sd.h;y++) for(var x=0;x<sd.w;x++){
+    if(!mask[y*sd.w+x]) continue;
     var nx=x+dx, ny=y+dy;
-    if(nx>=0 && ny>=0 && nx<W && ny<H){ m[ny*W+nx]=1; any=true; }
+    if(nx>=0 && ny>=0 && nx<sd.w && ny<sd.h){ m[ny*sd.w+nx]=1; any=true; }
   }
   return any? m : null;
 }
 function inSel(x,y){ return !!sel && selHas(sel,x,y); }
 function maskFromSel(s){
-  var m=new Uint8Array(W*H);
-  for(var y=Math.max(0,s.y0);y<=Math.min(H-1,s.y1);y++) for(var x=Math.max(0,s.x0);x<=Math.min(W-1,s.x1);x++) if(selHas(s,x,y)) m[y*W+x]=1;
+  var sd=spaceDims();
+  var m=new Uint8Array(sd.w*sd.h);
+  for(var y=Math.max(0,s.y0);y<=Math.min(sd.h-1,s.y1);y++) for(var x=Math.max(0,s.x0);x<=Math.min(sd.w-1,s.x1);x++) if(selHas(s,x,y)) m[y*sd.w+x]=1;
   return m;
 }
 function unionSel(a,b){
   if(!a) return b; if(!b) return a;
-  var ma=maskFromSel(a), mb=maskFromSel(b), m=new Uint8Array(W*H);
-  var x0=W,y0=H,x1=-1,y1=-1;
-  for(var i=0;i<m.length;i++){ m[i]=ma[i]|mb[i]; if(m[i]){ var px=i%W, py=(i/W)|0; if(px<x0)x0=px; if(px>x1)x1=px; if(py<y0)y0=py; if(py>y1)y1=py; } }
+  var sd=spaceDims();
+  var ma=maskFromSel(a), mb=maskFromSel(b), m=new Uint8Array(sd.w*sd.h);
+  var x0=sd.w,y0=sd.h,x1=-1,y1=-1;
+  for(var i=0;i<m.length;i++){ m[i]=ma[i]|mb[i]; if(m[i]){ var px=i%sd.w, py=(i/sd.w)|0; if(px<x0)x0=px; if(px>x1)x1=px; if(py<y0)y0=py; if(py>y1)y1=py; } }
   if(x1<0) return null;
   return {x0:x0,y0:y0,x1:x1,y1:y1,mask:m};
 }
-function extractRegion(data,s){
+/* Read the selection's cells out of the space (each from its own
+   frame's draw layer in sheet mode). */
+function extractRegion(s){
   var w=s.x1-s.x0+1, h=s.y1-s.y0+1, cells=new Array(w*h);
   for(var y=0;y<h;y++) for(var x=0;x<w;x++){
     var cx=s.x0+x, cy=s.y0+y;
-    cells[y*w+x]= (inBounds(cx,cy) && selHas(s,cx,cy))? data[idx(cx,cy)] : null;
+    cells[y*w+x]= selHas(s,cx,cy)? spaceGet(cx,cy) : null;
   }
   return {w:w,h:h,cells:cells};
 }
-function clearRegion(data,s){ for(var y=s.y0;y<=s.y1;y++) for(var x=s.x0;x<=s.x1;x++) if(inBounds(x,y) && selHas(s,x,y)) data[idx(x,y)]=null; }
-function selectAll(){ sel={x0:0,y0:0,x1:W-1,y1:H-1}; drawSel(); }
-/* Move the selection's contents by (dx,dy). The selection may travel
-   past the canvas edge: cells that leave the canvas are dropped, and
-   the selection box itself can sit partly outside. Used by the move
-   tool and by the arrow keys. */
+function clearRegion(s){ for(var y=s.y0;y<=s.y1;y++) for(var x=s.x0;x<=s.x1;x++) if(selHas(s,x,y)) spaceSet(x,y,null); }
+function selectAll(){ var sd=spaceDims(); sel={x0:0,y0:0,x1:sd.w-1,y1:sd.h-1}; drawSel(); }
+/* Move the selection's contents by (dx,dy) immediately (arrow keys).
+   The selection may travel past the edge: cells that leave are
+   dropped, and the box itself can sit partly outside. */
 function moveSelContents(dx,dy){
   if(!sel || (!dx && !dy)) return false;
-  var data=drawData();
-  var region=extractRegion(data, sel);
-  var base=data.slice(); clearRegion(base, sel);
+  var region=extractRegion(sel);
+  clearRegion(sel);
   var ox=sel.x0+dx, oy=sel.y0+dy;
-  for(var i=0;i<data.length;i++) data[i]=base[i];
   var placed=false;
   for(var ry=0;ry<region.h;ry++) for(var rx=0;rx<region.w;rx++){
     var v=region.cells[ry*region.w+rx];
-    if(v && inBounds(ox+rx,oy+ry)){ data[idx(ox+rx,oy+ry)]=v; placed=true; }
+    if(v && spaceIn(ox+rx,oy+ry)){ spaceSet(ox+rx,oy+ry,v); placed=true; }
   }
   var nmask=shiftMask(sel.mask, dx, dy);
   if(!placed && !nmask){ sel=null; return true; } /* everything left the canvas */
@@ -2560,23 +2735,145 @@ function moveSelContents(dx,dy){
   return true;
 }
 
+/* ============ floating move (move tool) ============
+   Grabbing with the move tool LIFTS the content: the source cells are
+   cleared from the data, the lifted cells live only in this object
+   and are drawn on the overlay canvas — while it floats, nothing
+   underneath it is overwritten. Releasing the button does NOT
+   commit: the content stays floating until the user clicks somewhere
+   else (it lands there), drags it again from its floating position,
+   or cancels with Esc (the pre-move data comes back untouched). */
+var floatMove=null;
+function floatBackups(){
+  var b={};
+  frames.forEach(function(fr,i){ var l=drawLayerOf(i); if(l) b[i]=l.data.slice(); });
+  return b;
+}
+function startFloat(kind, p){
+  var region, origSel, layerRef=null, layerBackup=null;
+  if(kind==="sel"){
+    region=extractRegion(sel);
+    origSel={x0:sel.x0, y0:sel.y0, x1:sel.x1, y1:sel.y1, mask:sel.mask||null};
+  } else {
+    var s=spaceFrame(p.x,p.y); if(!s) return false;
+    if(viewMode!=="sheet"){
+      /* the pixel may live on any layer: it moves within its own layer */
+      layerRef=layerAtCellF(s.fi, s.lx, s.ly);
+      if(!layerRef) return false;
+      region={w:1, h:1, cells:[layerRef.data[idx(s.lx,s.ly)]]};
+      layerBackup=layerRef.data.slice();
+    } else {
+      var v=spaceGet(p.x,p.y); if(!v) return false;
+      region={w:1, h:1, cells:[v]};
+    }
+    origSel={x0:p.x, y0:p.y, x1:p.x, y1:p.y, mask:null};
+  }
+  floatMove={
+    kind:kind, region:region, origSel:origSel,
+    dx:0, dy:0, baseDx:0, baseDy:0,
+    grabDX:p.x-origSel.x0, grabDY:p.y-origSel.y0,
+    dup:moveDup, snap:snapshot(),
+    backups:(kind==="sel" || viewMode==="sheet")? floatBackups() : null,
+    layerRef:layerRef, layerBackup:layerBackup, hinted:false
+  };
+  /* lift: clear the source out of the data (unless duplicating). The
+     lifted cells themselves are written nowhere yet. */
+  if(!moveDup){
+    if(kind==="sel") clearRegion(origSel);
+    else if(layerRef) layerRef.data[idx(p.x,p.y)]=null;
+    else spaceSet(p.x,p.y,null);
+  }
+  drawing=true; moveMode="floatdrag";
+  render(); syncFloatSel();
+  return true;
+}
+function drawFloatOverlay(){
+  octx.clearRect(0,0,overC.width,overC.height);
+  if(!floatMove) return;
+  var fm=floatMove, ox=fm.origSel.x0+fm.dx, oy=fm.origSel.y0+fm.dy;
+  octx.save(); octx.globalAlpha=.92;
+  for(var ry=0;ry<fm.region.h;ry++) for(var rx=0;rx<fm.region.w;rx++){
+    var v=fm.region.cells[ry*fm.region.w+rx];
+    if(v && spaceIn(ox+rx,oy+ry)){ octx.fillStyle=v; octx.fillRect(ox+rx,oy+ry,1,1); }
+  }
+  octx.restore();
+}
+function syncFloatSel(){
+  if(!floatMove) return;
+  var fm=floatMove;
+  sel={x0:fm.origSel.x0+fm.dx, y0:fm.origSel.y0+fm.dy, x1:fm.origSel.x0+fm.dx+fm.region.w-1, y1:fm.origSel.y0+fm.dy+fm.region.h-1};
+  var sm=shiftMask(fm.origSel.mask, fm.dx, fm.dy);
+  if(sm) sel.mask=sm;
+  drawSel(); drawFloatOverlay();
+}
+function floatBoxContains(p){
+  if(!floatMove) return false;
+  var ox=floatMove.origSel.x0+floatMove.dx, oy=floatMove.origSel.y0+floatMove.dy;
+  return p.x>=ox && p.x<ox+floatMove.region.w && p.y>=oy && p.y<oy+floatMove.region.h;
+}
+function commitFloat(){
+  if(!floatMove) return;
+  var fm=floatMove; floatMove=null; moveMode=null; drawing=false;
+  var ox=fm.origSel.x0+fm.dx, oy=fm.origSel.y0+fm.dy;
+  var placed=false;
+  for(var ry=0;ry<fm.region.h;ry++) for(var rx=0;rx<fm.region.w;rx++){
+    var v=fm.region.cells[ry*fm.region.w+rx];
+    if(!v) continue;
+    var tx=ox+rx, ty=oy+ry;
+    if(fm.layerRef){ if(inBounds(tx,ty)){ fm.layerRef.data[idx(tx,ty)]=v; placed=true; } }
+    else if(spaceIn(tx,ty)){ spaceSet(tx,ty,v); placed=true; }
+  }
+  /* the whole float becomes ONE undo step back to the pre-move state */
+  undoStack.push(fm.snap); if(undoStack.length>90) undoStack.shift(); redoStack.length=0; syncUndoBtns(); markEdit();
+  var nmask=shiftMask(fm.origSel.mask, fm.dx, fm.dy);
+  if(!placed && !nmask){ sel=null; }
+  else {
+    sel={x0:ox, y0:oy, x1:ox+fm.region.w-1, y1:oy+fm.region.h-1};
+    if(nmask) sel.mask=nmask;
+  }
+  octx.clearRect(0,0,overC.width,overC.height);
+  renderAll();
+}
+function commitFloatAt(p){
+  if(!floatMove) return;
+  floatMove.dx=p.x-floatMove.grabDX-floatMove.origSel.x0;
+  floatMove.dy=p.y-floatMove.grabDY-floatMove.origSel.y0;
+  commitFloat();
+}
+function cancelFloat(){
+  if(!floatMove) return;
+  var fm=floatMove; floatMove=null; moveMode=null; drawing=false;
+  if(fm.backups){
+    Object.keys(fm.backups).forEach(function(k){
+      var l=drawLayerOf(parseInt(k,10)); if(!l) return;
+      var b=fm.backups[k];
+      for(var i=0;i<b.length;i++) l.data[i]=b[i];
+    });
+  }
+  if(fm.layerRef && fm.layerBackup){ for(var i=0;i<fm.layerBackup.length;i++) fm.layerRef.data[i]=fm.layerBackup[i]; }
+  sel={x0:fm.origSel.x0, y0:fm.origSel.y0, x1:fm.origSel.x1, y1:fm.origSel.y1};
+  if(fm.origSel.mask) sel.mask=fm.origSel.mask;
+  octx.clearRect(0,0,overC.width,overC.height);
+  renderAll();
+  toast("移動をキャンセルしました");
+}
+
 /* ============ pointer handling ============ */
+/* Pointer position in SPACE coordinates (see spaceGet/spaceSet):
+   in sheet mode this is a cell of the whole sheet, so strokes and
+   selections flow across frame boundaries. sheetFrameAt /
+   hoverFrameIdx still report which frame slot the pointer is over. */
 function eventPos(e){
   var r=wrap.getBoundingClientRect();
   var vd=viewDims();
   var gx=Math.floor((e.clientX-r.left)/r.width*vd.w), gy=Math.floor((e.clientY-r.top)/r.height*vd.h);
   gx=Math.max(0,Math.min(vd.w-1,gx)); gy=Math.max(0,Math.min(vd.h-1,gy));
   if(viewMode!=="sheet"){ sheetFrameAt=null; hoverFrameIdx=null; return {x:gx, y:gy}; }
-  /* sheet mode: the sheet cell maps to (frame, cell inside that frame).
-     Tools always work in frame-local coordinates; during a stroke the
-     frame is pinned to the one the stroke started in. */
   var L=sheetLayout();
   var fi=Math.floor(gy/H)*L.cols+Math.floor(gx/W);
   sheetFrameAt = fi<frames.length? fi : null;
-  var lf = strokeFrame!=null? strokeFrame : (sheetFrameAt!=null? sheetFrameAt : curFrame);
-  hoverFrameIdx=lf;
-  var lx=gx-(lf%L.cols)*W, ly=gy-Math.floor(lf/L.cols)*H;
-  return {x:Math.max(0,Math.min(W-1,lx)), y:Math.max(0,Math.min(H-1,ly))};
+  hoverFrameIdx=sheetFrameAt;
+  return {x:gx, y:gy};
 }
 /* While a line is being dragged, the status bar shows its length and
    angle next to the coordinates (the snapped end point, so Shift's 5°
@@ -2596,9 +2893,10 @@ function drawOverlayShape(){
   var ep=snapEnd();
   var pts = tool==="line" ? linePixels(startPos.x,startPos.y,ep.x,ep.y)
           : shapePixels(shapeBBox(), shapeType);
-  var off=frameOff();
+  /* points are space coordinates; the overlay canvas is exactly the
+     view size, so they draw as-is in both view modes */
+  var sd=spaceDims();
   octx.save();
-  octx.translate(off.x, off.y);
   octx.fillStyle = color||"#000000";
   octx.globalAlpha = color? .85 : .35;
   var savedBrush=brush;
@@ -2606,7 +2904,7 @@ function drawOverlayShape(){
   pts.forEach(function(p){
     for(var dy=0;dy<brush;dy++) for(var dx=0;dx<brush;dx++){
       var bx=p[0]+dx-Math.floor(brush/2), by=p[1]+dy-Math.floor(brush/2);
-      if(inBounds(bx,by)) octx.fillRect(bx,by,1,1);
+      if(bx>=0 && by>=0 && bx<sd.w && by<sd.h) octx.fillRect(bx,by,1,1);
     }
   });
   brush=savedBrush;
@@ -2625,29 +2923,33 @@ function applyShape(){
   octx.clearRect(0,0,overC.width,overC.height);
 }
 function pickColor(x,y){
-  var c=flattenFrame(curDrawFrameIdx(),true)[idx(x,y)];
+  var s=spaceFrame(x,y);
+  var c=s? flattenFrame(s.fi,true)[idx(s.lx,s.ly)] : null;
   setColor(c);
   toast(c? ("スポイト： "+c) : "スポイト： 透明");
 }
-/* The raw colour of the topmost visible layer at (x,y), ignoring effects
-   and blending: this is the colour a replace operation can really find. */
+/* The raw colour of the topmost visible layer at space point (x,y),
+   ignoring effects and blending: this is the colour a replace
+   operation can really find. */
 function topColorAt(x,y){
-  var fr=frames[curDrawFrameIdx()], found=null;
+  var s=spaceFrame(x,y); if(!s) return null;
+  var fr=frames[s.fi], found=null;
   (function walk(list){
     for(var i=0;i<list.length && !found;i++){
       var n=list[i];
       if(n.visible===false) continue;
       if(n.type==="group") walk(n.children);
-      else { var v=n.data[idx(x,y)]; if(v) found=v; }
+      else { var v=n.data[idx(s.lx,s.ly)]; if(v) found=v; }
     }
   })(fr.layers);
   return found;
 }
-/* The topmost visible layer that actually holds a pixel at (x,y).
-   The single-cell move must use this, not the active layer: the pixel
-   you see and grab usually lives on some other layer. */
-function layerAtCell(x,y){
-  var fr=frames[curDrawFrameIdx()], found=null;
+/* The topmost visible layer that actually holds a pixel at frame-local
+   (fi, x, y). The single-cell move must use this, not the active
+   layer: the pixel you see and grab usually lives on some other layer. */
+function layerAtCellF(fi,x,y){
+  var fr=frames[fi], found=null;
+  if(!fr) return null;
   (function walk(list){
     for(var i=0;i<list.length && !found;i++){
       var n=list[i];
@@ -2657,6 +2959,10 @@ function layerAtCell(x,y){
     }
   })(fr.layers);
   return found;
+}
+function layerAtCell(x,y){
+  var s=spaceFrame(x,y);
+  return s? layerAtCellF(s.fi, s.lx, s.ly) : null;
 }
 function addRecent(c){ if(!c) return; recent=[c].concat(recent.filter(function(v){return v!==c})).slice(0,14); renderRecent(); }
 function renderRecent(){
@@ -2682,6 +2988,20 @@ function gestureMid(){
   return { x:(pts[0].x+pts[1].x)/2, y:(pts[0].y+pts[1].y)/2,
            d:Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y) };
 }
+/* One gesture step, shared by the canvas and the stage around it:
+   spreading / closing the fingers zooms around their midpoint, and
+   moving both fingers pans by the midpoint's own movement — the
+   direct, map-app feel. Deltas are incremental, so the view tracks
+   the fingers instead of jumping. */
+function gestureStep(){
+  if(!touchGesture || touchPts.size<2) return;
+  var gm=gestureMid();
+  var gf=gm.d/Math.max(10,touchGesture.d);
+  if(Math.abs(gf-1)>0.001) zoomAt(gm.x, gm.y, stagePx*gf);
+  panX+=gm.x-touchGesture.mx; panY+=gm.y-touchGesture.my;
+  clampPan(); layoutWrap();
+  touchGesture={d:Math.max(10,gm.d), mx:gm.x, my:gm.y};
+}
 function cancelStrokeForGesture(){
   drawing=false; panDrag=null; pendingRight=null;
   selMode=null; selStart=null; moveMode=null; moveBase=null; moveData=null;
@@ -2689,6 +3009,7 @@ function cancelStrokeForGesture(){
   octx.clearRect(0,0,overC.width,overC.height);
   wrap.classList.remove("panning"); area.classList.remove("panning");
   render();
+  if(floatMove) drawFloatOverlay();
 }
 /* Middle-button drag pans the canvas inside its area. */
 wrap.addEventListener("mousedown",function(e){ if(e.button===1) e.preventDefault(); });
@@ -2720,11 +3041,9 @@ wrap.addEventListener("pointerdown",function(e){
   if(viewMode==="sheet"){
     /* an empty sheet slot has nothing to draw on */
     if(sheetFrameAt==null){ startPos=null; lastPos=null; return; }
-    /* ANY frame can be drawn on, whichever frame is selected: the
-       stroke is pinned to the frame under the cursor and lands on
-       that frame's own last-selected layer. The selected frame
-       (curFrame) does not change. */
-    strokeFrame=sheetFrameAt;
+    /* the frame under the cursor receives frame-scoped actions
+       (replace target, readouts); the drawing itself is space-based
+       and may wander into neighbouring frames mid-stroke */
     drawFrameOverride=sheetFrameAt;
   }
   /* replace-panel "pick from canvas" mode */
@@ -2739,7 +3058,13 @@ wrap.addEventListener("pointerdown",function(e){
   /* right button: wait and see — a click opens the canvas menu, a drag erases.
      Ctrl+click (the macOS right-click) takes the same path. */
   if(e.button===2 || (e.button===0 && e.ctrlKey)){ pendingRight={x:p.x, y:p.y, cx:e.clientX, cy:e.clientY}; return; }
+  /* a floating move is settled (at its current spot) before any other
+     tool acts — except the move tool itself, which handles the click */
+  if(floatMove && tool!=="move" && !(tool==="select" && e.shiftKey)) commitFloat();
   var baseTool = tool==="mirror" ? "pen" : tool; /* the mirror tool draws like the pen, mirrored */
+  /* Shift held with the select tool: it behaves as the move tool
+     for as long as Shift is down */
+  if(baseTool==="select" && (e.shiftKey || shiftTempMove)) baseTool="move";
   /* Alt+click is the eyedropper everywhere EXCEPT the move tool, where
      Alt+drag means "duplicate while moving" */
   var effTool = (e.altKey && baseTool!=="move") ? "picker" : (e.button===2 ? "eraser" : baseTool);
@@ -2764,7 +3089,8 @@ wrap.addEventListener("pointerdown",function(e){
     if(target===repTo){ toast("もうその色です（置換先は左の設定で変更できます）"); drawFrameOverride=null; strokeFrame=null; return; }
     pushHistory();
     var n=0;
-    eachNode(frames[curDrawFrameIdx()].layers,function(m){ if(m.type==="layer") n+=replaceInData(m.data, target, repTo); });
+    var rfr=spaceFrame(p.x,p.y);
+    eachNode(frames[rfr? rfr.fi : curDrawFrameIdx()].layers,function(m){ if(m.type==="layer") n+=replaceInData(m.data, target, repTo); });
     setRepFrom(target);
     addRecent(repTo); renderAll();
     toast(target+" → "+repTo+" に "+n+"px 置き換えました（全レイヤー）");
@@ -2790,26 +3116,30 @@ wrap.addEventListener("pointerdown",function(e){
     return;
   }
   if(effTool==="move"){
-    /* the move tool moves ONLY the selection contents (drag starts inside
-       the selection) or the single filled cell under the cursor.
-       Alt+drag duplicates: the original stays where it was. */
+    /* the move tool LIFTS what it grabs (see startFloat): the content
+       floats until a later click lands it. Alt+drag duplicates: the
+       original stays where it was. */
     moveDup=!!e.altKey;
-    if(sel && inSel(p.x,p.y)){
-      pushHistory(); drawing=true; moveMode="sel";
-      selOrig={x0:sel.x0,y0:sel.y0,x1:sel.x1,y1:sel.y1};
-      selOrigMask=sel.mask||null;
-      selRegion=extractRegion(drawData(), sel);
-      moveBase=drawData().slice(); if(!moveDup) clearRegion(moveBase, sel);
-      if(moveDup) toast("Alt+ドラッグ：複製しながら移動します");
+    if(floatMove){
+      if(floatBoxContains(p)){
+        /* grab the floating content again and keep dragging it */
+        floatMove.baseDx=floatMove.dx; floatMove.baseDy=floatMove.dy;
+        drawing=true; moveMode="floatdrag";
+        return;
+      }
+      /* a click anywhere else lands the floating content right there */
+      commitFloatAt(p);
       return;
     }
-    /* no selection (or the drag started outside it): move just the one
-       cell under the cursor — the topmost visible layer's pixel there */
-    var cellLayer=layerAtCell(p.x,p.y);
-    if(cellLayer){
-      pushHistory(); drawing=true; moveMode="cell";
-      moveData=cellLayer.data;
-      moveBase=moveData.slice(); if(!moveDup) moveBase[idx(p.x,p.y)]=null; moveVal=moveData[idx(p.x,p.y)];
+    if(sel && inSel(p.x,p.y)){
+      if(startFloat("sel",p) && moveDup) toast("Alt+ドラッグ：複製しながら移動します");
+      return;
+    }
+    /* no selection (or the drag started outside it): lift just the one
+       cell under the cursor */
+    var cs=spaceFrame(p.x,p.y);
+    if(cs && (viewMode==="sheet"? spaceGet(p.x,p.y) : layerAtCellF(cs.fi, cs.lx, cs.ly))){
+      startFloat("cell",p);
       return;
     }
     moveDup=false;
@@ -2818,7 +3148,7 @@ wrap.addEventListener("pointerdown",function(e){
   }
   pushHistory();
   drawing=true;
-  if(effTool==="fill"){ floodFill(p.x,p.y, drawData()[idx(p.x,p.y)], color); addRecent(color); renderAll(); drawing=false; return; }
+  if(effTool==="fill"){ floodFill(p.x,p.y, spaceGet(p.x,p.y), color); addRecent(color); renderAll(); drawing=false; return; }
   if(effTool==="line"||effTool==="shape"){ drawOverlayShape(); return; }
   var c = effTool==="eraser" ? null : color;
   /* Shift+click with the pen: straight line from the last plotted point */
@@ -2833,15 +3163,7 @@ wrap.addEventListener("pointerdown",function(e){
 wrap.addEventListener("pointermove",function(e){
   if(e.pointerType==="touch" && touchPts.has(e.pointerId)){
     touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
-    if(touchGesture){
-      var gm=gestureMid();
-      var gf=gm.d/Math.max(10,touchGesture.d);
-      if(Math.abs(gf-1)>0.001) zoomAt(gm.x, gm.y, stagePx*gf);
-      panX+=gm.x-touchGesture.mx; panY+=gm.y-touchGesture.my;
-      clampPan(); layoutWrap();
-      touchGesture={d:Math.max(10,gm.d), mx:gm.x, my:gm.y};
-      return;
-    }
+    if(touchGesture){ gestureStep(); return; }
   }
   if(touchGesture) return;
   if(panDrag){
@@ -2864,12 +3186,18 @@ wrap.addEventListener("pointermove",function(e){
     }
     return;
   }
-  $("posLabel").textContent = (viewMode==="sheet" && hoverFrameIdx!=null)
-    ? ("フレーム"+(hoverFrameIdx+1)+" ・ "+p.x+", "+p.y) : (p.x+", "+p.y);
-  /* in sheet mode the colour readout belongs to the frame under the
-     cursor, which is not always the current frame */
-  var hcFrame=(viewMode==="sheet" && hoverFrameIdx!=null)? hoverFrameIdx : curFrame;
-  var hc=(hcFrame===curFrame? (curFlat||flattenFrame(curFrame,true)) : flattenFrame(hcFrame,true))[idx(p.x,p.y)];
+  if(viewMode==="sheet" && hoverFrameIdx!=null){
+    var hL2=sheetLayout();
+    $("posLabel").textContent="フレーム"+(hoverFrameIdx+1)+" ・ "+(p.x-(hoverFrameIdx%hL2.cols)*W)+", "+(p.y-Math.floor(hoverFrameIdx/hL2.cols)*H);
+  } else if(viewMode==="sheet"){
+    $("posLabel").textContent="シート "+p.x+", "+p.y;
+  } else {
+    $("posLabel").textContent=p.x+", "+p.y;
+  }
+  /* the colour readout belongs to the frame under the cursor, which
+     in sheet mode is not always the current frame */
+  var hs=spaceFrame(p.x,p.y);
+  var hc=hs? (hs.fi===curFrame? (curFlat||flattenFrame(curFrame,true)) : flattenFrame(hs.fi,true))[idx(hs.lx,hs.ly)] : null;
   $("hoverColor").textContent=hc||"透明";
   if(!hoverCell || hoverCell.x!==p.x || hoverCell.y!==p.y){ hoverCell=p; if(!selMode) drawSel(); }
   if(selMode==="new"){
@@ -2881,27 +3209,13 @@ wrap.addEventListener("pointermove",function(e){
     if(!lp || lp.x!==p.x || lp.y!==p.y){ lassoPts.push(p); selDragged=true; }
     drawSel(); return;
   }
-  if(moveMode==="sel" && selOrig && selRegion && moveBase){
-    var dx=p.x-startPos.x, dy=p.y-startPos.y;
-    /* no clamping: the selection may be dragged past the canvas edge.
-       Cells that leave the canvas are dropped; the box (and the lasso
-       mask, shifted from its drag-start state) can sit partly outside. */
-    var data=drawData();
-    for(var i=0;i<data.length;i++) data[i]=moveBase[i];
-    var ox=selOrig.x0+dx, oy=selOrig.y0+dy;
-    for(var ry=0;ry<selRegion.h;ry++) for(var rx=0;rx<selRegion.w;rx++){
-      var v=selRegion.cells[ry*selRegion.w+rx];
-      if(v && inBounds(ox+rx,oy+ry)) data[idx(ox+rx,oy+ry)]=v;
-    }
-    sel={x0:ox,y0:oy,x1:ox+selRegion.w-1,y1:oy+selRegion.h-1};
-    var sm=shiftMask(selOrigMask, dx, dy);
-    if(sm) sel.mask=sm;
-    render(); drawSel(); return;
-  }
-  if(moveMode==="cell" && moveBase && moveData){
-    for(var i3=0;i3<moveData.length;i3++) moveData[i3]=moveBase[i3];
-    moveData[idx(p.x,p.y)]=moveVal;
-    render(); return;
+  if(moveMode==="floatdrag" && floatMove){
+    /* no clamping: the floating content may be dragged past the edge;
+       cells that end up outside are dropped when it lands */
+    floatMove.dx=floatMove.baseDx+(p.x-startPos.x);
+    floatMove.dy=floatMove.baseDy+(p.y-startPos.y);
+    syncFloatSel();
+    return;
   }
   if(!drawing) return;
   var baseTool2 = tool==="mirror" ? "pen" : tool;
@@ -2915,9 +3229,10 @@ wrap.addEventListener("pointermove",function(e){
 });
 function finishLasso(){
   if(lassoPts.length<3){ sel=null; lassoPts=[]; return; }
-  var x0=W,y0=H,x1=-1,y1=-1;
+  var sd=spaceDims();
+  var x0=sd.w,y0=sd.h,x1=-1,y1=-1;
   lassoPts.forEach(function(p){ if(p.x<x0)x0=p.x; if(p.x>x1)x1=p.x; if(p.y<y0)y0=p.y; if(p.y>y1)y1=p.y; });
-  var mask=new Uint8Array(W*H), any=false;
+  var mask=new Uint8Array(sd.w*sd.h), any=false;
   function inPoly(px,py){
     var inside=false;
     for(var i=0,j=lassoPts.length-1;i<lassoPts.length;j=i++){
@@ -2926,7 +3241,7 @@ function finishLasso(){
     }
     return inside;
   }
-  for(var y=y0;y<=y1;y++) for(var x=x0;x<=x1;x++) if(inPoly(x+.5,y+.5)){ mask[y*W+x]=1; any=true; }
+  for(var y=y0;y<=y1;y++) for(var x=x0;x<=x1;x++) if(inPoly(x+.5,y+.5)){ mask[y*sd.w+x]=1; any=true; }
   lassoPts=[];
   if(!any){ sel=null; return; }
   var ns={x0:x0,y0:y0,x1:x1,y1:y1,mask:mask};
@@ -2977,6 +3292,17 @@ function endStroke(e){
     }
     selShiftAdd=false; prevSel=null; drawFrameOverride=null;
     renderAll(); return;
+  }
+  if(moveMode==="floatdrag"){
+    /* releasing the button does NOT commit: the content stays
+       floating until the next click lands it somewhere (Esc cancels) */
+    moveMode=null; drawing=false; startPos=null; drawFrameOverride=null; moveDup=false;
+    if(floatMove && !floatMove.hinted){
+      floatMove.hinted=true;
+      toast("浮いたままです：別の場所をクリックすると、そこに移動が完了します（Escでキャンセル）");
+    }
+    drawSel(); drawFloatOverlay();
+    return;
   }
   if(moveMode){ moveMode=null; moveBase=null; moveData=null; selOrig=null; selOrigMask=null; selRegion=null; moveDup=false; drawing=false; startPos=null; drawFrameOverride=null; renderAll(); return; }
   if(!drawing){ drawFrameOverride=null; return; }
@@ -3088,6 +3414,33 @@ function areaPanEnd(){
 }
 area.addEventListener("pointerup",areaPanEnd);
 area.addEventListener("pointercancel",areaPanEnd);
+/* Two-finger gestures work anywhere in the canvas area — on the empty
+   stage around the canvas too, not only on the picture itself.
+   Touches that land off-canvas join the same gesture state as canvas
+   touches (one finger on the canvas + one on the stage still makes a
+   gesture), and a lone off-canvas finger simply does nothing. */
+area.addEventListener("pointerdown",function(e){
+  if(e.pointerType!=="touch" || wrap.contains(e.target)) return;
+  touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
+  e.preventDefault();
+  try{ area.setPointerCapture(e.pointerId); }catch(_){}
+  if(touchPts.size===2 && !touchGesture){
+    cancelStrokeForGesture();
+    var g0=gestureMid();
+    touchGesture={d:Math.max(10,g0.d), mx:g0.x, my:g0.y};
+  }
+});
+area.addEventListener("pointermove",function(e){
+  if(e.pointerType!=="touch" || wrap.contains(e.target)) return;
+  if(touchPts.has(e.pointerId)) touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
+  if(touchGesture && touchPts.size>=2) gestureStep();
+});
+function areaTouchEnd(e){
+  if(e.pointerType!=="touch") return;
+  if(touchPts.delete(e.pointerId) && touchPts.size<2) touchGesture=null;
+}
+area.addEventListener("pointerup",areaTouchEnd);
+area.addEventListener("pointercancel",areaTouchEnd);
 /* dropping an image file onto the canvas imports it, same as ファイル →
    画像を読み込む (with the same size/mode dialog when sizes differ) */
 area.addEventListener("dragover",function(e){ e.preventDefault(); });
@@ -3114,27 +3467,27 @@ $("selAllBtn").addEventListener("click",function(){ setTool("select"); selectAll
 $("selClearBtn").addEventListener("click",function(){ sel=null; drawSel(); });
 function copyPixels(){
   if(!sel){ toast("先に範囲を選択してね"); return; }
-  clipboard=extractRegion(drawData(), sel); toast("コピーしました（"+clipboard.w+"×"+clipboard.h+"）");
+  clipboard=extractRegion(sel); toast("コピーしました（"+clipboard.w+"×"+clipboard.h+"）");
 }
 function cutPixels(){
   if(!sel){ toast("先に範囲を選択してね"); return; }
-  clipboard=extractRegion(drawData(), sel); pushHistory(); clearRegion(drawData(), sel); renderAll(); toast("切り取りました");
+  clipboard=extractRegion(sel); pushHistory(); clearRegion(sel); renderAll(); toast("切り取りました");
 }
 function pastePixels(){
   if(!clipboard){ toast("先にコピーか切り取りをしてね"); return; }
   pushHistory();
-  var data=drawData();
+  var sd=spaceDims();
   var ox=sel? Math.max(0,sel.x0):0, oy=sel? Math.max(0,sel.y0):0;
   for(var ry=0;ry<clipboard.h;ry++) for(var rx=0;rx<clipboard.w;rx++){
     var v=clipboard.cells[ry*clipboard.w+rx];
-    if(v && inBounds(ox+rx,oy+ry)) data[idx(ox+rx,oy+ry)]=v;
+    if(v) spaceSet(ox+rx,oy+ry,v);
   }
-  sel={x0:ox,y0:oy,x1:Math.min(W-1,ox+clipboard.w-1),y1:Math.min(H-1,oy+clipboard.h-1)};
+  sel={x0:ox,y0:oy,x1:Math.min(sd.w-1,ox+clipboard.w-1),y1:Math.min(sd.h-1,oy+clipboard.h-1)};
   setTool("select"); renderAll(); toast("貼り付けました");
 }
 function deletePixels(){
   if(!sel){ toast("先に範囲を選択してね"); return; }
-  pushHistory(); clearRegion(drawData(), sel); renderAll(); toast("選択範囲を消しました");
+  pushHistory(); clearRegion(sel); renderAll(); toast("選択範囲を消しました");
 }
 $("selCopyBtn").addEventListener("click",copyPixels);
 $("selCutBtn").addEventListener("click",cutPixels);
@@ -3150,13 +3503,26 @@ var TOOLHELP={
   picker:"キャンバスの色を拾って「今の色」にします。",
   line:"ドラッグで直線を引きます。離すまでプレビューが出ます。太さはブラシの太さです。ドラッグ中は下のステータスバーに線の長さと角度が出ます。Shiftを押しながらだと5°刻みにスナップします。",
   shape:"ドラッグで図形を描きます。種類（四角／円／三角／菱形）・中・起点は、選んだときに左に出る「図形設定」で切り替えます。Shiftを押しながらだと正方形になります。",
-  select:"ドラッグで範囲を選びます（矩形／投げ縄は左のボックスで切替）。クリックだけでは選択されず、選択が解除されます。Shift+ドラッグで今の選択に追加。中身の移動は「移動」ツールで行います。",
+  select:"ドラッグで範囲を選びます（矩形／投げ縄は左のボックスで切替）。クリックだけでは選択されず、選択が解除されます。Shiftを押している間は「移動」ツールに切り替わり、そのまま中身を動かせます。中身の移動は「移動」ツールでも行います。",
   replace:"クリックした色を、置換先の色に全て置き換えます（今のフレームの全レイヤー）。選ぶと左に置換元／置換先を指定できるボックスが出ます。",
-  move:"選択範囲の中をドラッグすると中身だけが動きます。選択範囲がないとき（または外からドラッグしたとき）は、掴んだマスの1マスだけが動きます（そのマスを持つ一番上のレイヤーごと）。選択範囲はキャンバスの端を超えて動かせて、外に出た分は消えます。Alt+ドラッグで複製しながら移動、矢印キーでも1pxずつ動かせます。",
+  move:"選択範囲の中をドラッグすると中身が浮き上がります。ボタンを離しても確定せず、浮いたままになります。別の場所をクリックすると、その位置に移動が完了します（浮いている間、下のドットは上書きされません）。浮いた中身はもう一度ドラッグで動かせて、Escでキャンセルできます。選択範囲がないとき（または外からドラッグしたとき）は、掴んだマスの1マスだけが浮きます。端を超えて動かせて、外に出た分は確定時に消えます。Alt+ドラッグで複製しながら移動、浮いている間は矢印キーでも1pxずつ動かせます。",
   mirror:"ペンのように描けて、左右／上下ミラーが効きます。選ぶと左にミラーのON/OFFボックスが出ます（他のツールでもミラーは効きます）。",
   text:"拡張機能「文字スタンプ」で追加されるツールです。Pixel M Plus 12で描いた文字をドットとして読み取り、今の色でキャンバスに置きます。文字と大きさは、選んだときに左に出る「文字スタンプ設定」で決めます。クリックした位置が文字の左上になります。"
 };
+/* While Shift is held with the select tool, the move tool looks and
+   acts selected; releasing Shift hands the select tool back. */
+function syncTempMoveUI(){
+  if(tool!=="select") shiftTempMove=false;
+  document.querySelectorAll("#toolGrid .tool-btn").forEach(function(b){
+    if(b.dataset.tool==="select") b.classList.toggle("is-on", tool==="select" && !shiftTempMove);
+    else if(b.dataset.tool==="move") b.classList.toggle("is-on", tool==="move" || shiftTempMove);
+  });
+  $("toolLabel").textContent = shiftTempMove? "移動" : TOOLNAMES[tool];
+}
 function setTool(t){
+  /* switching tools settles a floating move where it currently floats */
+  if(floatMove && t!=="move") commitFloat();
+  if(t!=="select" && shiftTempMove){ shiftTempMove=false; }
   tool=t;
   document.querySelectorAll("#toolGrid .tool-btn").forEach(function(b){ b.classList.toggle("is-on", b.dataset.tool===t); });
   $("toolLabel").textContent=TOOLNAMES[t];
@@ -3346,7 +3712,7 @@ $("npGoBtn").addEventListener("click",function(){
   }
   curFrame=0; previewIdx=0; sel=null;
   fps=8; $("fpsRange").value=8; $("fpsNum").value=8; $("fpsLabel").textContent="8";
-  expCols=4; expRows=1; expPad=0; syncSheetUI();
+  expCols=1; expRows=1; expPad=0; syncSheetUI();
   viewMode="normal"; setSeg("viewModeSeg","m","normal");
   bgMode=0; wrap.style.background=""; wrap.style.backgroundSize=""; $("bgBtn").textContent="背景：市松";
   projName=name; $("projName").value=name;
@@ -3563,16 +3929,26 @@ function buildLayerRows(nodes, container, depth){
       if(e.dataTransfer){ e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain","layer:"+n.id);}catch(_){} }
     });
     row.addEventListener("dragend",function(){ dragLayerId=null; renderLayers(); });
+    /* the drop position is shown as a dashed insertion LINE at the
+       edge where the dragged row will land — top edge for "before",
+       bottom edge for "after" / "inside" (a group takes it as its
+       first child, i.e. right under the group row) */
+    function layerDropPos(e){
+      var r=row.getBoundingClientRect(), f=(e.clientY-r.top)/Math.max(1,r.height);
+      return (n.type==="group" && f>0.3 && f<0.7) ? "inside" : (f<0.5? "before" : "after");
+    }
     row.addEventListener("dragover",function(e){
       if(dragLayerId==null||dragLayerId===n.id) return;
-      e.preventDefault(); row.classList.add("drag-over");
+      e.preventDefault();
+      var pos=layerDropPos(e);
+      row.classList.toggle("ins-t", pos==="before");
+      row.classList.toggle("ins-b", pos!=="before");
     });
-    row.addEventListener("dragleave",function(){ row.classList.remove("drag-over"); });
+    row.addEventListener("dragleave",function(){ row.classList.remove("ins-t","ins-b"); });
     row.addEventListener("drop",function(e){
-      e.preventDefault(); row.classList.remove("drag-over");
+      e.preventDefault(); row.classList.remove("ins-t","ins-b");
       if(dragLayerId==null||dragLayerId===n.id) return;
-      var r=row.getBoundingClientRect(), f=(e.clientY-r.top)/Math.max(1,r.height);
-      var pos = (n.type==="group" && f>0.3 && f<0.7) ? "inside" : (f<0.5? "before" : "after");
+      var pos=layerDropPos(e);
       var dragLoc=findNode(fr.layers, dragLayerId);
       if(!dragLoc) return;
       if(findNode([dragLoc.node], n.id)){ toast("グループの中身には入れられません"); return; }
@@ -3773,22 +4149,8 @@ $("fxOpenBtn").addEventListener("click",function(){ openFx({kind:"layer", id:fra
    Only effects the user explicitly added are listed; each can be
    adjusted or removed, and new ones are added one at a time. */
 var fxTarget=null; /* {kind:"layer",id} | {kind:"frame",index} | {kind:"fgroup",gid} */
-var FX_UI=[
-  {id:"outline", type:"toggle", key:"outlineOn", label:"縁取り", controls:[{t:"color", k:"outlineColor", label:"色"}, {t:"range", k:"outlineSize", min:1, max:3, label:"太さ"}]},
-  {id:"shadow", type:"toggle", key:"shadowOn", label:"影", controls:[{t:"color", k:"shadowColor", label:"色"}, {t:"range", k:"shadowX", min:-8, max:8, label:"→"}, {t:"range", k:"shadowY", min:-8, max:8, label:"↓"}]},
-  {id:"offset", type:"values", label:"ずらし", controls:[{t:"range", k:"offsetX", min:-16, max:16, label:"→"}, {t:"range", k:"offsetY", min:-16, max:16, label:"↓"}]},
-  {id:"bright", type:"values", label:"明るさ", controls:[{t:"range", k:"bright", min:-100, max:100, label:""}]},
-  {id:"contrast", type:"values", label:"コントラスト", controls:[{t:"range", k:"contrast", min:-100, max:100, label:""}]},
-  {id:"hue", type:"values", label:"色相シフト", controls:[{t:"range", k:"hue", min:-180, max:180, label:"°"}]},
-  {id:"sat", type:"values", label:"彩度", controls:[{t:"range", k:"sat", min:-100, max:100, label:""}]},
-  {id:"invert", type:"toggle", key:"invertOn", label:"色反転", controls:[]},
-  {id:"gray", type:"toggle", key:"grayOn", label:"グレースケール", controls:[]},
-  {id:"sepia", type:"toggle", key:"sepiaOn", label:"セピア", controls:[]},
-  {id:"posterize", type:"toggle", key:"posterizeOn", label:"ポスタリゼーション（減色）", controls:[{t:"range", k:"posterizeLevels", min:2, max:8, label:"段階"}]},
-  {id:"blur", type:"toggle", key:"blurOn", label:"ぼかし", controls:[]},
-  {id:"noise", type:"values", label:"ノイズ", controls:[{t:"range", k:"noise", min:0, max:100, label:"量"}]}
-];
-function fxDef(id){ for(var i=0;i<FX_UI.length;i++) if(FX_UI[i].id===id) return FX_UI[i]; return null; }
+/* FX_DEFS (kinds, default params, controls) is defined with the layer
+   model near the top of this script. */
 function fxTargetNode(){
   if(!fxTarget) return null;
   if(fxTarget.kind==="layer"){
@@ -3813,91 +4175,90 @@ function openFx(target){
   $("fxBackdrop").hidden=false;
 }
 function closeFx(){ $("fxBackdrop").hidden=true; }
+/* No per-kind limit: every call appends a fresh instance with the
+   kind's default parameters. Instances apply in list order. */
 function addEffectTo(n, id){
-  var fx=n.fx; if(!fx) return false;
-  if(!Array.isArray(fx.added)) fx.added=deriveAdded(fx);
-  if(fx.added.indexOf(id)>=0) return false;
+  if(!n || !n.fx) return false;
   var def=fxDef(id); if(!def) return false;
-  fx.added.push(id);
-  if(def.type==="toggle"){ fx[def.key]=true; }
-  else {
-    var allZero=def.controls.every(function(c){ return !fx[c.k]; });
-    if(allZero){
-      var dfl={bright:20, contrast:20, hue:30, sat:20, noise:20};
-      def.controls.forEach(function(c){
-        if(c.k==="offsetX") fx[c.k]=2;
-        else if(dfl[c.k]!=null) fx[c.k]=dfl[c.k];
-      });
-    }
-  }
+  fxList(n.fx).push({id:id, on:true, params:Object.assign({}, def.params)});
   return true;
 }
-function removeEffectFrom(n, id){
-  var fx=n.fx, def=fxDef(id); if(!fx||!def) return;
-  if(def.type==="toggle") fx[def.key]=false;
-  else def.controls.forEach(function(c){ fx[c.k]=0; });
-  fx.added=(fx.added||[]).filter(function(x){ return x!==id; });
+function removeEffectFrom(n, index){
+  if(!n || !n.fx) return;
+  fxList(n.fx).splice(index,1);
 }
 function buildFxList(){
   var n=fxTargetNode(); if(!n) return;
-  var fx=n.fx;
-  if(!Array.isArray(fx.added)) fx.added=deriveAdded(fx);
+  var list=fxList(n.fx);
   var box=$("fxList"); box.innerHTML="";
-  if(!fx.added.length){
+  if(!list.length){
     var p=document.createElement("p"); p.className="note"; p.style.margin="2px";
-    p.textContent="エフェクトはまだ追加されていません。下の「＋ エフェクトを追加」から選んでください。";
+    p.textContent="エフェクトはまだ追加されていません。下の「＋ エフェクトを追加」から選んでください。同じエフェクトを何個でも追加できて、上のものから順番にかかります。";
     box.appendChild(p);
   }
-  fx.added.slice().forEach(function(id){
-    var def=fxDef(id); if(!def) return;
+  list.slice().forEach(function(inst, index){
+    var def=fxDef(inst.id); if(!def) return;
+    if(!inst.params) inst.params=Object.assign({}, def.params);
+    var prm=inst.params;
     var row=document.createElement("div"); row.className="fxp-row";
-    row.dataset.fxid=id;
-    row.addEventListener("dragstart",function(e){ row.classList.add("drag-src"); if(e.dataTransfer){ e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain","fx:"+id);}catch(_){} } });
-    row.addEventListener("dragend",function(){ row.classList.remove("drag-src"); });
-    row.addEventListener("dragover",function(e){ e.preventDefault(); row.classList.add("drag-over"); });
-    row.addEventListener("dragleave",function(){ row.classList.remove("drag-over"); });
+    row.dataset.fxindex=index;
+    /* drag reorder: the insertion line shows where this row will land
+       (before = top edge, after = bottom edge of the target row) */
+    var clearIns=function(){ row.classList.remove("ins-t","ins-b"); };
+    row.addEventListener("dragstart",function(e){ row.classList.add("drag-src"); row.dataset.dragging="1"; if(e.dataTransfer){ e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain","fxidx:"+index);}catch(_){} } });
+    row.addEventListener("dragend",function(){ row.classList.remove("drag-src"); row.draggable=false; delete row.dataset.dragging; });
+    row.addEventListener("dragover",function(e){
+      var srcEl=box.querySelector("[data-dragging]");
+      if(!srcEl || srcEl===row) return;
+      e.preventDefault();
+      var r=row.getBoundingClientRect();
+      var before=(e.clientY-r.top) < r.height/2;
+      row.classList.toggle("ins-t", before);
+      row.classList.toggle("ins-b", !before);
+      row.dataset.insBefore=before? "1":"";
+    });
+    row.addEventListener("dragleave",clearIns);
     row.addEventListener("drop",function(e){
-      e.preventDefault(); row.classList.remove("drag-over");
+      e.preventDefault();
+      var before=row.dataset.insBefore==="1";
+      clearIns();
       var dt=e.dataTransfer? e.dataTransfer.getData("text/plain") : "";
-      var from=dt.indexOf("fx:")===0? dt.slice(3) : null;
-      if(!from||from===id) return;
-      var a=fx.added.indexOf(from), b=fx.added.indexOf(id);
-      if(a<0||b<0) return;
-      fx.added.splice(a,1); fx.added.splice(b,0,from);
-      buildFxList();
+      var from=dt.indexOf("fxidx:")===0? parseInt(dt.slice(6),10) : NaN;
+      if(isNaN(from) || from===index) return;
+      var live=fxList(n.fx);
+      var mv=live.splice(from,1)[0];
+      var to=index + (before? 0:1);
+      if(from<to) to--;
+      live.splice(to,0,mv);
+      buildFxList(); renderAll();
     });
     var head=document.createElement("div"); head.className="fxp-head";
-    var grip=document.createElement("span"); grip.className="fx-grip"; grip.textContent="⠿"; grip.title="ここをドラッグで並べ替え";
+    var grip=document.createElement("span"); grip.className="fx-grip"; grip.textContent="⠿"; grip.title="ここをドラッグで並べ替え（上から順番にかかります）";
     /* only the grip arms dragging, so the sliders inside stay usable */
     grip.addEventListener("pointerdown",function(){ row.draggable=true; });
     grip.addEventListener("pointerup",function(){ if(!row.classList.contains("drag-src")) row.draggable=false; });
-    row.addEventListener("dragend",function(){ row.draggable=false; });
     head.appendChild(grip);
-    if(def.type==="toggle"){
-      var b=document.createElement("button");
-      b.className="px-btn fx-tgl"+(fx[def.key]?" is-on":"");
-      b.textContent=def.label;
-      b.addEventListener("click",function(){ fx[def.key]=!fx[def.key]; buildFxList(); renderAll(); });
-      head.appendChild(b);
-    } else {
-      var s=document.createElement("span"); s.textContent=def.label; head.appendChild(s);
-    }
+    var tgl=document.createElement("button");
+    tgl.className="px-btn fx-tgl"+(inst.on!==false?" is-on":"");
+    tgl.textContent=def.label;
+    tgl.title="クリックで ON / OFF（OFFの間はかかりません）";
+    tgl.addEventListener("click",function(){ inst.on=inst.on===false? true : false; buildFxList(); renderAll(); });
+    head.appendChild(tgl);
     var del=document.createElement("button");
     del.className="px-btn"; del.style.marginLeft="auto"; del.style.fontSize="11px"; del.style.padding="3px 7px";
     del.textContent="× 外す";
-    del.addEventListener("click",function(){ removeEffectFrom(n, id); buildFxList(); renderAll(); });
+    del.addEventListener("click",function(){ removeEffectFrom(n, index); buildFxList(); renderAll(); });
     head.appendChild(del);
     row.appendChild(head);
-    var showCtls = def.controls && def.controls.length && (def.type!=="toggle" || fx[def.key]);
-    if(showCtls){
+    if(def.controls && def.controls.length && inst.on!==false){
       var ct=document.createElement("div"); ct.className="fxp-ctls";
       def.controls.forEach(function(c){
         var lab=document.createElement("label"); lab.className="fxp-ctl";
         if(c.label){ var ls=document.createElement("span"); ls.textContent=c.label; lab.appendChild(ls); }
-        var inp=document.createElement("input");
         if(c.t==="color"){
-          inp.type="color"; inp.value=fx[c.k];
-          inp.addEventListener("input",function(){ fx[c.k]=inp.value; renderAll(); });
+          var inp=document.createElement("input");
+          inp.type="color"; inp.value=prm[c.k];
+          inp.addEventListener("input",function(){ prm[c.k]=inp.value; renderAll(); });
           lab.appendChild(inp);
           /* effect colors can be taken from the current drawing color */
           var cb=document.createElement("button");
@@ -3906,23 +4267,41 @@ function buildFxList(){
           cb.title="右サイドで選んでいる今の色をここにセットします";
           cb.addEventListener("click",function(){
             if(!color){ toast("今の色が透明なので使えません"); return; }
-            fx[c.k]=color; buildFxList(); renderAll();
+            prm[c.k]=color; buildFxList(); renderAll();
             toast("エフェクトの色を今の色 "+color+" にしました");
           });
           lab.appendChild(cb);
+        } else if(c.t==="select"){
+          var selEl=document.createElement("select");
+          selEl.className="px-btn"; selEl.style.fontSize="12px"; selEl.style.padding="3px 20px 3px 6px";
+          c.options.forEach(function(op){
+            var o=document.createElement("option"); o.value=op[0]; o.textContent=op[1];
+            if(prm[c.k]===op[0]) o.selected=true;
+            selEl.appendChild(o);
+          });
+          selEl.addEventListener("change",function(){ prm[c.k]=selEl.value; renderAll(); });
+          lab.appendChild(selEl);
+        } else if(c.t==="check"){
+          var chk=document.createElement("button");
+          chk.className="px-btn"+(prm[c.k]?" is-on":"");
+          chk.style.fontSize="11px"; chk.style.padding="3px 8px";
+          chk.textContent=prm[c.k]? "ON" : "OFF";
+          chk.addEventListener("click",function(ev){ ev.preventDefault(); prm[c.k]=!prm[c.k]; buildFxList(); renderAll(); });
+          lab.appendChild(chk);
         } else {
-          inp.type="range"; inp.min=c.min; inp.max=c.max; inp.value=fx[c.k];
+          var rin=document.createElement("input");
+          rin.type="range"; rin.min=c.min; rin.max=c.max; rin.value=prm[c.k];
           var num=document.createElement("input");
-          num.type="number"; num.className="fx-num"; num.min=c.min; num.max=c.max; num.value=fx[c.k];
+          num.type="number"; num.className="fx-num"; num.min=c.min; num.max=c.max; num.value=prm[c.k];
           num.setAttribute("aria-label", def.label+"（数値）");
-          inp.addEventListener("input",function(){ fx[c.k]=parseInt(inp.value,10); num.value=inp.value; renderAll(); });
+          rin.addEventListener("input",function(){ prm[c.k]=parseInt(rin.value,10); num.value=rin.value; renderAll(); });
           num.addEventListener("change",function(){
             var v=parseInt(num.value,10);
-            if(isNaN(v)) v=fx[c.k];
+            if(isNaN(v)) v=prm[c.k];
             v=Math.max(c.min,Math.min(c.max,v));
-            fx[c.k]=v; inp.value=v; num.value=v; renderAll();
+            prm[c.k]=v; rin.value=v; num.value=v; renderAll();
           });
-          lab.appendChild(inp); lab.appendChild(num);
+          lab.appendChild(rin); lab.appendChild(num);
         }
         ct.appendChild(lab);
       });
@@ -3933,11 +4312,9 @@ function buildFxList(){
 }
 $("fxAddBtn").addEventListener("click",function(){
   var n=fxTargetNode(); if(!n) return;
-  var fx=n.fx; if(!Array.isArray(fx.added)) fx.added=deriveAdded(fx);
   var items=[];
-  FX_UI.forEach(function(def){
-    var added=fx.added.indexOf(def.id)>=0;
-    items.push({label:(added? "✓ " : "＋ ")+def.label, disabled:added, fn:function(){
+  FX_DEFS.forEach(function(def){
+    items.push({label:"＋ "+def.label+" を追加", fn:function(){
       if(addEffectTo(n, def.id)){ buildFxList(); renderAll(); }
     }});
   });
@@ -3994,7 +4371,7 @@ $("fxBakeBtn2").addEventListener("click",function(){
 /* top "エフェクト" menu: add an effect to the active layer, Photoshop-style */
 (function buildFxMenu(){
   var box=$("fxMenuList"); if(!box) return;
-  FX_UI.forEach(function(def){
+  FX_DEFS.forEach(function(def){
     var b=document.createElement("button");
     b.textContent="＋ "+def.label+" を追加";
     b.addEventListener("click",function(){
@@ -4170,7 +4547,12 @@ function buildGifBlob(flats, scale, bgHex, delayCs){
   ps("\x21\xff\x0bNETSCAPE2.0\x03\x01"); p16(0); bytes.push(0);
   var minCode=Math.max(2, Math.round(Math.log2(palSize)));
   flats.forEach(function(f){
-    bytes.push(0x21,0xf9,4, (1<<2)|(useTrans?1:0)); p16(delayCs); bytes.push(0,0);
+    /* disposal method 2 (restore to background): each frame is a full
+       image, and with "do not dispose" the transparent pixels of the
+       next frame let the PREVIOUS frame show through — the ghosting
+       seen on the home cards' animated thumbnails. Restoring to the
+       (transparent) background between frames clears that away. */
+    bytes.push(0x21,0xf9,4, (2<<2)|(useTrans?1:0)); p16(delayCs); bytes.push(0,0);
     bytes.push(0x2c); p16(0); p16(0); p16(ow); p16(oh); bytes.push(0);
     var indices=new Uint8Array(ow*oh);
     for(var y=0;y<oh;y++) for(var x=0;x<ow;x++){
@@ -4238,7 +4620,7 @@ var curProjId=null, projPcSaved=false;
 var projLive=false;
 var projRev=0, pcSavedRev=-1, pcSavedAt=null, browserSavedRev=-1, lastBrowserAt=null;
 var quotaWarned=false, lastDeleted=null;
-var settings={auto:true, interval:60, lastId:null, theme:"auto", accent:null};
+var settings={auto:true, interval:60, lastId:null, theme:"auto", themeColor:null};
 function loadSettings(){
   try{ var s=JSON.parse(localStorage.getItem(SET_KEY)||"null"); if(s && typeof s==="object") settings=Object.assign(settings,s); }catch(e){}
 }
@@ -4609,12 +4991,6 @@ function renderHome(){
   var grid=$("homeGrid"); grid.innerHTML="";
   $("homeEmpty").hidden=store.length>0;
   renderHomeStats(store.length);
-  /* "continue" jumps straight back into the last opened project */
-  var lastRec=null;
-  if(settings.lastId) for(var li=0; li<store.length; li++) if(store[li].id===settings.lastId){ lastRec=store[li]; break; }
-  var cont=$("homeContinueBtn");
-  cont.hidden=!lastRec;
-  if(lastRec) cont.textContent="続きから：「"+(lastRec.name||"プロジェクト")+"」";
   list.forEach(function(rec){
     var isCurrent=(rec.id===curProjId);
     /* for the project open in the editor right now, judge the PC state
@@ -4663,18 +5039,22 @@ function renderHome(){
     meta.textContent=lines;
     meta.style.whiteSpace="pre-line";
     body.appendChild(meta);
+    /* cards stay quiet: "open" is the only always-visible button;
+       everything else lives in the "…" menu (same items as the
+       card's right-click menu) */
     var btns=document.createElement("div"); btns.className="home-btns";
     var open=document.createElement("button"); open.className="px-btn primary"; open.textContent="開く";
+    open.style.flex="1";
     open.addEventListener("click",function(){ openStoredProject(rec); });
-    var dl=document.createElement("button"); dl.className="px-btn"; dl.textContent="PCに保存";
-    dl.addEventListener("click",function(){ downloadStoredProject(rec); });
-    var dup=document.createElement("button"); dup.className="px-btn"; dup.textContent="複製";
-    dup.addEventListener("click",function(){ duplicateProject(rec); });
-    var ren=document.createElement("button"); ren.className="px-btn"; ren.textContent="名前の変更";
-    ren.addEventListener("click",function(){ renameProject(rec); });
-    var del=document.createElement("button"); del.className="px-btn danger"; del.textContent="削除";
-    del.addEventListener("click",function(){ requestDeleteProject(rec); });
-    btns.appendChild(open); btns.appendChild(dl); btns.appendChild(dup); btns.appendChild(ren); btns.appendChild(del);
+    var more=document.createElement("button"); more.className="px-btn"; more.textContent="…";
+    more.style.flex="0 0 44px";
+    more.title="その他の操作（複製／名前の変更／PCに保存／削除など）";
+    more.setAttribute("aria-label",(rec.name||"プロジェクト")+" のその他の操作");
+    more.addEventListener("click",function(){
+      var r=more.getBoundingClientRect();
+      showCtx(r.left, r.bottom+4, homeCardItems(rec));
+    });
+    btns.appendChild(open); btns.appendChild(more);
     body.appendChild(btns);
     card.appendChild(body);
     grid.appendChild(card);
@@ -4710,6 +5090,21 @@ function hideHome(){
    card it offers that project's actions; on the empty space, the
    home-level actions. Capture phase + stopPropagation keeps the
    document-level fallback menu out of the home screen entirely. */
+/* one project's home actions, shared by the card's right-click menu
+   and its "…" button */
+function homeCardItems(rec){
+  return [
+    {desc:"「"+(rec.name||"プロジェクト")+"」"},
+    {label:"開く", fn:function(){ openStoredProject(rec); }},
+    {sep:true},
+    {label:"複製", fn:function(){ duplicateProject(rec); }},
+    {label:"名前の変更", fn:function(){ renameProject(rec); }},
+    {label:"PCに保存（.dspx）", fn:function(){ downloadStoredProject(rec); }},
+    {label:rec.fav? "ピン留めを外す" : "ピン留め", fn:function(){ toggleFavProject(rec); }},
+    {sep:true},
+    {label:"削除", fn:function(){ requestDeleteProject(rec); }}
+  ];
+}
 $("homeView").addEventListener("contextmenu",function(e){
   e.preventDefault(); e.stopPropagation();
   var card=(e.target && e.target.closest)? e.target.closest(".home-card") : null;
@@ -4719,17 +5114,7 @@ $("homeView").addEventListener("contextmenu",function(e){
     for(var i=0;i<st.length;i++) if(st[i].id===card.dataset.pid){ rec=st[i]; break; }
   }
   if(rec){
-    showCtx(e.clientX, e.clientY, [
-      {desc:"「"+(rec.name||"プロジェクト")+"」"},
-      {label:"開く", fn:function(){ openStoredProject(rec); }},
-      {sep:true},
-      {label:"複製", fn:function(){ duplicateProject(rec); }},
-      {label:"名前の変更", fn:function(){ renameProject(rec); }},
-      {label:"PCに保存（.dspx）", fn:function(){ downloadStoredProject(rec); }},
-      {label:rec.fav? "ピン留めを外す" : "ピン留め", fn:function(){ toggleFavProject(rec); }},
-      {sep:true},
-      {label:"削除", fn:function(){ requestDeleteProject(rec); }}
-    ]);
+    showCtx(e.clientX, e.clientY, homeCardItems(rec));
   } else {
     showCtx(e.clientX, e.clientY, [
       {desc:"ドット絵スタジオ ・ ホーム"},
@@ -4751,16 +5136,10 @@ $("homeGrid").addEventListener("dragstart",function(e){ e.preventDefault(); });
 $("brandMark").addEventListener("click",function(){ showHome(); });
 $("mHome").addEventListener("click",function(){ showHome(); });
 $("mBrowserSave").addEventListener("click",function(){ saveToBrowser(false); });
-$("homeBackBtn").addEventListener("click",hideHome);
 $("homeNewBtn").addEventListener("click",function(){ openNewDialog(); });
 $("homeOpenFileBtn").addEventListener("click",function(){ $("homeDspxFile").click(); });
 $("homeSearch").addEventListener("input",function(){ homeQuery=this.value; renderHome(); });
 $("homeSort").addEventListener("change",function(){ homeSortMode=this.value; renderHome(); });
-$("homeContinueBtn").addEventListener("click",function(){
-  var st=loadStore();
-  for(var i=0;i<st.length;i++) if(st[i].id===settings.lastId){ openStoredProject(st[i]); return; }
-  toast("続きのプロジェクトが見つかりませんでした");
-});
 $("homeBackupBtn").addEventListener("click",function(){
   var st=loadStore();
   if(!st.length){ toast("バックアップするプロジェクトがありません"); return; }
@@ -4850,12 +5229,48 @@ function isDarkTheme(){
   if(t==="light") return false;
   return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
 }
+/* Full colour themes (the テーマカラー extension): each theme is a
+   whole palette — background, panels, ink, lines, accent and friends
+   — with a light and a dark variant, applied as inline custom
+   properties over the base CSS. "スタンダード" (no override) is the
+   app's built-in palette. */
+var THEME_VARS=["--bg","--bg2","--panel","--panel2","--ink","--ink2","--line","--line-soft","--accent","--teal","--amber","--blue","--danger","--checker1","--checker2","--shadow","--shadow-sm"];
+var COLOR_THEMES=[
+  { id:"forest", name:"森", sw:["#7fae5a","#2f9e6e","#e8a812","#eef4dc"],
+    light:{"--bg":"#e9f0dd","--bg2":"#dde8c8","--panel":"#fbfdf3","--panel2":"#eef4dc","--ink":"#26301e","--ink2":"#67755a","--line":"#26301e","--line-soft":"#c3d2a8","--accent":"#e4572e","--teal":"#2f9e6e","--amber":"#e8a812","--blue":"#4a7fb5","--danger":"#d64541","--checker1":"#ffffff","--checker2":"#cfd8bd","--shadow":"4px 4px 0 #26301e","--shadow-sm":"2px 2px 0 #26301e"},
+    dark:{"--bg":"#131a12","--bg2":"#0e130d","--panel":"#1e2a1c","--panel2":"#182218","--ink":"#eef3e2","--ink2":"#9aa88f","--line":"#070906","--line-soft":"#3a4a34","--accent":"#ff7a4d","--teal":"#3ecf8e","--amber":"#ffb224","--blue":"#6aa8ff","--danger":"#ff6b6b","--checker1":"#2c3a2a","--checker2":"#212c20","--shadow":"4px 4px 0 #070906","--shadow-sm":"2px 2px 0 #070906"} },
+  { id:"sea", name:"海", sw:["#2277cc","#0e9594","#ff6b4a","#e6f3f8"],
+    light:{"--bg":"#e2eff5","--bg2":"#cfe6ef","--panel":"#f7fcfe","--panel2":"#e6f3f8","--ink":"#1d3038","--ink2":"#5d7683","--line":"#1d3038","--line-soft":"#b3d2de","--accent":"#ff6b4a","--teal":"#0e9594","--amber":"#ffb224","--blue":"#2277cc","--danger":"#e5484d","--checker1":"#ffffff","--checker2":"#c8dde8","--shadow":"4px 4px 0 #1d3038","--shadow-sm":"2px 2px 0 #1d3038"},
+    dark:{"--bg":"#0d1620","--bg2":"#0a1119","--panel":"#182635","--panel2":"#12202f","--ink":"#e8f2f7","--ink2":"#93a9b8","--line":"#05090f","--line-soft":"#2e4356","--accent":"#ff7a59","--teal":"#2dd4bf","--amber":"#ffb224","--blue":"#5ea8ff","--danger":"#ff6b6b","--checker1":"#24384c","--checker2":"#1a2a3a","--shadow":"4px 4px 0 #05090f","--shadow-sm":"2px 2px 0 #05090f"} },
+  { id:"sunset", name:"夕焼け", sw:["#ef5426","#f59e0b","#0f766e","#fcefd8"],
+    light:{"--bg":"#fbeedd","--bg2":"#f7ddc0","--panel":"#fffaf0","--panel2":"#fcefd8","--ink":"#38251c","--ink2":"#82685a","--line":"#38251c","--line-soft":"#ecc9a3","--accent":"#ef5426","--teal":"#0f766e","--amber":"#f59e0b","--blue":"#5b7fb4","--danger":"#d92d20","--checker1":"#ffffff","--checker2":"#f3d9b8","--shadow":"4px 4px 0 #38251c","--shadow-sm":"2px 2px 0 #38251c"},
+    dark:{"--bg":"#1d1316","--bg2":"#150d10","--panel":"#2b1a20","--panel2":"#211419","--ink":"#fbeee6","--ink2":"#b89a90","--line":"#0d0709","--line-soft":"#4d3240","--accent":"#ff7a45","--teal":"#2dd4bf","--amber":"#ffb224","--blue":"#7aa2f7","--danger":"#ff6b6b","--checker1":"#3a2530","--checker2":"#2c1c24","--shadow":"4px 4px 0 #0d0709","--shadow-sm":"2px 2px 0 #0d0709"} },
+  { id:"sakura", name:"さくら", sw:["#e83e6b","#12a594","#ffb224","#fbeef4"],
+    light:{"--bg":"#fbeef2","--bg2":"#f6dce6","--panel":"#fffafd","--panel2":"#fbeef4","--ink":"#38222c","--ink2":"#86626f","--line":"#38222c","--line-soft":"#eec3d2","--accent":"#e83e6b","--teal":"#12a594","--amber":"#ffb224","--blue":"#5b8def","--danger":"#e5484d","--checker1":"#ffffff","--checker2":"#f2d3de","--shadow":"4px 4px 0 #38222c","--shadow-sm":"2px 2px 0 #38222c"},
+    dark:{"--bg":"#1c1218","--bg2":"#140c11","--panel":"#2a1a24","--panel2":"#20131c","--ink":"#f9edf2","--ink2":"#b394a3","--line":"#0b0608","--line-soft":"#4a3040","--accent":"#ff6b9d","--teal":"#2dd4bf","--amber":"#ffb224","--blue":"#7aa2f7","--danger":"#ff6b6b","--checker1":"#38222e","--checker2":"#2a1a24","--shadow":"4px 4px 0 #0b0608","--shadow-sm":"2px 2px 0 #0b0608"} },
+  { id:"desert", name:"砂漠", sw:["#d95f26","#5b8c5a","#e3a008","#f6edd4"],
+    light:{"--bg":"#f3ead3","--bg2":"#eadfc0","--panel":"#fdf8ea","--panel2":"#f6edd4","--ink":"#33291a","--ink2":"#7d6f52","--line":"#33291a","--line-soft":"#dcc998","--accent":"#d95f26","--teal":"#5b8c5a","--amber":"#e3a008","--blue":"#4a7fb5","--danger":"#d92d20","--checker1":"#ffffff","--checker2":"#e6d7ae","--shadow":"4px 4px 0 #33291a","--shadow-sm":"2px 2px 0 #33291a"},
+    dark:{"--bg":"#1a1409","--bg2":"#120e06","--panel":"#2a2113","--panel2":"#1f190e","--ink":"#f3ead3","--ink2":"#b3a37f","--line":"#090602","--line-soft":"#4a3d24","--accent":"#ff8a4d","--teal":"#7bc47f","--amber":"#ffb224","--blue":"#6aa8ff","--danger":"#ff6b6b","--checker1":"#382e1a","--checker2":"#2a2113","--shadow":"4px 4px 0 #090602","--shadow-sm":"2px 2px 0 #090602"} },
+  { id:"mono", name:"モノクロ", sw:["#333333","#777777","#999999","#efefef"],
+    light:{"--bg":"#ececec","--bg2":"#dedede","--panel":"#fbfbfb","--panel2":"#efefef","--ink":"#1c1c1c","--ink2":"#666666","--line":"#1c1c1c","--line-soft":"#c4c4c4","--accent":"#333333","--teal":"#777777","--amber":"#999999","--blue":"#555555","--danger":"#b3261e","--checker1":"#ffffff","--checker2":"#d2d2d2","--shadow":"4px 4px 0 #1c1c1c","--shadow-sm":"2px 2px 0 #1c1c1c"},
+    dark:{"--bg":"#121212","--bg2":"#0c0c0c","--panel":"#1f1f1f","--panel2":"#181818","--ink":"#f0f0f0","--ink2":"#a3a3a3","--line":"#050505","--line-soft":"#3d3d3d","--accent":"#e8e8e8","--teal":"#bdbdbd","--amber":"#d6d6d6","--blue":"#9e9e9e","--danger":"#ff8a80","--checker1":"#2e2e2e","--checker2":"#222222","--shadow":"4px 4px 0 #050505","--shadow-sm":"2px 2px 0 #050505"} }
+];
+function findColorTheme(id){
+  for(var i=0;i<COLOR_THEMES.length;i++) if(COLOR_THEMES[i].id===id) return COLOR_THEMES[i];
+  return null;
+}
 function applyTheme(){
   var el=document.documentElement;
   if(settings.theme==="dark" || settings.theme==="light") el.setAttribute("data-theme", settings.theme);
   else el.removeAttribute("data-theme");
-  if(extState.themecolor && settings.accent) el.style.setProperty("--accent", settings.accent);
-  else el.style.removeProperty("--accent");
+  /* clear any previous theme's inline palette, then apply the chosen
+     theme's variant for the effective light/dark mode */
+  THEME_VARS.forEach(function(v){ el.style.removeProperty(v); });
+  var th=(typeof extState!=="undefined" && extState.themecolor)? findColorTheme(settings.themeColor) : null;
+  if(th){
+    var pal=isDarkTheme()? th.dark : th.light;
+    Object.keys(pal).forEach(function(v){ el.style.setProperty(v, pal[v]); });
+  }
   syncThemeUI();
   drawGrid();
 }
@@ -4871,30 +5286,24 @@ function cycleTheme(){
 }
 $("homeThemeBtn").addEventListener("click",cycleTheme);
 $("mTheme").addEventListener("click",cycleTheme);
-/* theme colour picker (the dialog itself is only reachable while the
-   テーマカラー extension is on — see applyExtState) */
-var ACCENT_COLORS=[
-  {c:"#ff5a3c", name:"コーラル（初期）"},
-  {c:"#e5484d", name:"あか"},
-  {c:"#d6336c", name:"ピンク"},
-  {c:"#7c4dff", name:"むらさき"},
-  {c:"#3e7bfa", name:"あお"},
-  {c:"#12a594", name:"ティール"},
-  {c:"#2f9e44", name:"みどり"},
-  {c:"#e8590c", name:"オレンジ"}
-];
+/* theme picker (the dialog itself is only reachable while the
+   テーマカラー extension is on — see applyExtState). Each swatch
+   shows the theme's main colours as a strip; the name is a scene /
+   mood word, since a theme is a set of colours, not one colour. */
 function renderAccentGrid(){
   var g=$("accentGrid"); if(!g) return;
   g.innerHTML="";
-  ACCENT_COLORS.forEach(function(a){
+  var opts=[{id:null, name:"スタンダード", sw:["#ff5a3c","#12a594","#ffb224","#fffdf4"]}].concat(COLOR_THEMES);
+  opts.forEach(function(a){
+    var cur=(settings.themeColor||null)===a.id;
     var b=document.createElement("button");
-    b.type="button"; b.className="accent-sw"+(settings.accent===a.c? " is-on":"");
-    b.style.background=a.c;
-    b.setAttribute("aria-label","テーマカラー："+a.name);
+    b.type="button"; b.className="accent-sw"+(cur? " is-on":"");
+    b.style.background="linear-gradient(90deg,"+a.sw.join(",")+")";
+    b.setAttribute("aria-label","テーマ："+a.name);
     var s=document.createElement("span"); s.textContent=a.name; b.appendChild(s);
     b.addEventListener("click",function(){
-      settings.accent=a.c; saveSettings(); applyTheme(); renderAccentGrid();
-      toast("テーマカラーを「"+a.name+"」にしました");
+      settings.themeColor=a.id; saveSettings(); applyTheme(); renderAccentGrid();
+      toast("テーマを「"+a.name+"」にしました（アプリ全体の配色が変わります）");
     });
     g.appendChild(b);
   });
@@ -4904,8 +5313,8 @@ function closeAccent(){ $("accentBackdrop").hidden=true; }
 $("accentCloseBtn").addEventListener("click",closeAccent);
 $("accentBackdrop").addEventListener("click",function(e){ if(e.target===this) closeAccent(); });
 $("accentResetBtn").addEventListener("click",function(){
-  settings.accent=null; saveSettings(); applyTheme(); renderAccentGrid();
-  toast("テーマカラーを初期の色に戻しました");
+  settings.themeColor=null; saveSettings(); applyTheme(); renderAccentGrid();
+  toast("テーマを初期（スタンダード）に戻しました");
 });
 $("homeAccentBtn").addEventListener("click",openAccent);
 $("mAccent").addEventListener("click",openAccent);
@@ -4917,7 +5326,7 @@ var HOW_SLIDES=[
   {t:"3. レイヤーとフレーム", x:"レイヤーは「重ねる紙」です。左側のパネルで追加・複製・並べ替えができ、絵を部品ごとに分けて描けます。フレームはアニメのフレームで、下の帯で追加します。再生ボタンで動きを確認でき、レイヤーにもフレームにもエフェクトをかけられます。"},
   {t:"4. 保存のしかた（2種類）", x:"「ブラウザに保存」は、この端末のブラウザの中に保存する方法で、ホーム画面に並びます。自動保存もONにできます（保存の設定）。「PCに保存（.dspx）」はファイルとしてダウンロードする方法で、別の端末へ渡したりバックアップしたりできます。ホームのカードには、最新版がPCに保存済みかどうかが表示されます。"},
   {t:"5. 書き出し", x:"完成したら「書き出し」から PNG（今のフレーム）・スプライトシート・GIF（アニメ）・ZIP（フレーム一式）で書き出せます。拡大率や背景、シートの列・行も選べて、プレビューで確認しながら書き出せます。"},
-  {t:"6. 拡張機能とテーマ", x:"ホーム画面の右上「拡張機能」から、必要な機能だけをONにできます（キャラクター読み込み、パレット集、SVG書き出し、文字スタンプ、テーマカラーなど）。画面の明るさは「テーマ」ボタンでライト／ダークを切り替えられ、テーマカラー拡張をONにするとアクセントカラーも変えられます。"}
+  {t:"6. 拡張機能とテーマ", x:"ホーム画面の右上「拡張機能」から、必要な機能だけをONにできます（キャラクター読み込み、パレット集、SVG書き出し、文字スタンプ、テーマカラーなど）。画面の明るさは「テーマ」ボタンでライト／ダークを切り替えられ、テーマカラー拡張をONにするとアプリ全体の配色テーマも変えられます。"}
 ];
 var howIdx=0;
 function renderHow(){
@@ -4953,7 +5362,7 @@ updateSaveStatus();
 function readExpInputs(){
   var sc=parseInt($("expScaleNum").value,10);
   exportScale=Math.max(1,Math.min(64, isNaN(sc)? 8 : sc));
-  var cl=parseInt($("expCols").value,10); expCols=isNaN(cl)? 4 : Math.max(1,Math.min(64,cl));
+  var cl=parseInt($("expCols").value,10); expCols=isNaN(cl)? 1 : Math.max(1,Math.min(64,cl));
   var pd=parseInt($("expPad").value,10); expPad=isNaN(pd)? 0 : Math.max(0,Math.min(128,pd));
 }
 /* columns and rows are linked through the frame count: changing one
@@ -5146,7 +5555,7 @@ $("jsonFile").addEventListener("change",function(e){
         frames.forEach(function(fr){
           var first=null;
           eachNode(fr.layers,function(m){ if(!first && m.type==="layer") first=m; });
-          if(first) first.fx=Object.assign(defaultEffects(), d.effects);
+          if(first) first.fx=saneFx(Object.assign({}, d.effects));
         });
       }
       $("fpsRange").value=fps; $("fpsNum").value=fps; $("fpsLabel").textContent=fps;
@@ -5798,6 +6207,9 @@ $("framesStrip").addEventListener("pointerdown",function(){ uiFocus="frame"; });
 document.addEventListener("keydown",function(e){
   var tag=(e.target.tagName||"").toLowerCase();
   if(tag==="input"||tag==="select"||tag==="textarea") return;
+  if(e.key==="Shift" && !e.ctrlKey && !e.metaKey && !e.altKey && tool==="select" && !shiftTempMove){
+    shiftTempMove=true; syncTempMoveUI(); return;
+  }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z"){ e.preventDefault(); e.shiftKey? redo() : undo(); return; }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="y"){ e.preventDefault(); redo(); return; }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="s"){ e.preventDefault(); doSaveProj(); return; }
@@ -5815,6 +6227,13 @@ document.addEventListener("keydown",function(e){
   }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="a"){ e.preventDefault(); uiFocus="canvas"; setTool("select"); selectAll(); toast("全て選択しました"); return; }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="d"){ e.preventDefault(); uiDuplicate(); return; }
+  if(floatMove && e.key.indexOf("Arrow")===0){
+    e.preventDefault();
+    floatMove.dx+=e.key==="ArrowLeft"?-1:e.key==="ArrowRight"?1:0;
+    floatMove.dy+=e.key==="ArrowUp"?-1:e.key==="ArrowDown"?1:0;
+    syncFloatSel();
+    return;
+  }
   if(sel && e.key.indexOf("Arrow")===0){
     e.preventDefault();
     var adx=e.key==="ArrowLeft"?-1:e.key==="ArrowRight"?1:0;
@@ -5830,7 +6249,7 @@ document.addEventListener("keydown",function(e){
     if(uiFocus==="layer" || uiFocus==="frame" || sel){ e.preventDefault(); uiDelete(); }
     return;
   }
-  if(e.key==="Escape"){ sel=null; drawSel(); return; }
+  if(e.key==="Escape"){ if(floatMove){ cancelFloat(); return; } sel=null; drawSel(); return; }
   var k=e.key.toLowerCase();
   var map={b:"pen",e:"eraser",g:"fill",i:"picker",l:"line",r:"shape",m:"move",v:"select",x:"replace",y:"mirror"};
   if(k==="t" && extState.textstamp) setTool("text");
@@ -5839,6 +6258,9 @@ document.addEventListener("keydown",function(e){
   if(k==="]"){ brush=Math.min(5,brush+1); syncBrushSeg(); }
 });
 function syncBrushSeg(){ document.querySelectorAll("#brushSeg button").forEach(function(b){ b.classList.toggle("is-on", parseInt(b.dataset.b,10)===brush); }); }
+document.addEventListener("keyup",function(e){
+  if(e.key==="Shift" && shiftTempMove){ shiftTempMove=false; syncTempMoveUI(); }
+});
 
 /* ============ centered dialogs can be dragged by their title bar ============ */
 function makeDialogDraggable(dialog){
@@ -5868,7 +6290,7 @@ if(window.ResizeObserver){
   ro.observe(area);
 }
 window.addEventListener("resize",function(){ sizeHiRes(); });
-if(window.matchMedia){ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",drawGrid); }
+if(window.matchMedia){ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){ applyTheme(); }); }
 
 /* ============ extensions ============
    Extensions are opt-in features toggled from a small dialog opened
@@ -5901,8 +6323,8 @@ var EXT_DEFS=[
     desc:"有効にすると、ツールに「文字」が増えます。入力した文字列を Pixel M Plus 12 フォントで描いてドットとして読み取り、今の色でキャンバスに置けます。大きさはフォントの実寸（12px）の等倍〜3倍です。" },
   { id:"themecolor",
     name:"テーマカラー",
-    meta:"アクセントカラーを変更 ・ 8色から選択",
-    desc:"有効にすると、ホーム画面と「表示」メニューに「テーマカラー」ボタンが現れ、アプリのアクセントカラーを8色から選べるようになります。色の選択は保存され、次回も維持されます。無効にすると初期の色に戻ります（ライト／ダークの切り替え自体は拡張機能なしで使えます）。" }
+    meta:"アプリ全体の配色テーマを変更 ・ 森／海／夕焼け／さくら／砂漠／モノクロ",
+    desc:"有効にすると、ホーム画面と「表示」メニューに「テーマカラー」ボタンが現れ、アプリ全体の配色テーマを選べるようになります。背景・パネル・文字・アクセントなど色の組み合わせがまとめて切り替わり、ライト／ダークそれぞれに合わせた配色になります。選択は保存され、次回も維持されます。無効にすると初期の配色に戻ります（ライト／ダークの切り替え自体は拡張機能なしで使えます）。" }
 ];
 function renderExtList(){
   var box=$("extList"); if(!box) return;
