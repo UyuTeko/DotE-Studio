@@ -776,6 +776,57 @@ body.layout-mobile.mobile-color-open .side-right{
 body.layout-mobile .side-right #panelColor{order:-1}
 body.layout-mobile .side-right .used-panel{flex:none}
 body.layout-mobile .side-right .used-list{max-height:170px;flex:none}
+
+/* ===== mobile: quieter chrome (smaller type, tighter padding) =====
+   The menu bar and its dropdowns speak at the tool rail's volume
+   (the rail labels are 9.5px): menu labels ~10px, dropdown items
+   ~10.5px, narrow padding. The floating tool-option dialogs
+   (図形設定・選択範囲・拡大縮小・文字・マップチップ・色置き換え・
+   ミラー) and the bottom-bar sheets (カラー / レイヤー / フレーム)
+   get the same treatment so they stop shouting over the canvas.
+   Tap targets keep a floor (min-height 30px on buttons and menu
+   items, 38px kept on the frame / layer button rows) — only the
+   text and the air around it shrink.
+   Scoped to body.layout-mobile throughout: the PC layout is
+   untouched. */
+body.layout-mobile .menu-btn{font-size:10px;padding:4px 6px}
+body.layout-mobile .menu-panel{padding:3px;min-width:168px}
+body.layout-mobile .menu-panel button{font-size:10.5px;padding:5px 7px;gap:10px;min-height:30px;align-items:center}
+body.layout-mobile .menu-panel .sc{font-size:9.5px}
+body.layout-mobile .menu-panel .help-txt{font-size:10px;padding:3px 7px}
+body.layout-mobile .menu-panel .help-txt b{font-size:10px;padding:0 4px;margin-right:4px}
+body.layout-mobile .menu-panel .msep{margin:3px 2px}
+body.layout-mobile .workspace .panel{padding:7px}
+body.layout-mobile .workspace .panel h2{font-size:12px;margin-bottom:4px}
+body.layout-mobile .workspace .panel h2 .h2-note{font-size:10px}
+body.layout-mobile .workspace label{font-size:10px;margin-bottom:2px}
+body.layout-mobile .workspace .note{font-size:10px;margin-top:4px}
+body.layout-mobile .workspace .px-btn{font-size:11px;padding:5px 8px;min-height:30px}
+body.layout-mobile .workspace .frames-ctl .px-btn,body.layout-mobile .workspace .layer-bar .px-btn{min-height:38px}
+body.layout-mobile .workspace .seg button{font-size:11px;padding:5px 0}
+body.layout-mobile .workspace input[type="text"]{font-size:12px;padding:4px 6px}
+body.layout-mobile .workspace #selPanel .sel-info{font-size:11px;padding:3px 6px;margin-bottom:5px}
+body.layout-mobile .workspace .layer-row{font-size:11px}
+body.layout-mobile .workspace .used-item{font-size:11px}
+body.layout-mobile .workspace .used-item .u-count{font-size:10px}
+
+/* ===== mobile frames panel: two tiers =====
+   Top tier = the frame strip at full width (thumbnails are the
+   point of this panel; it scrolls sideways when frames overflow).
+   Bottom tier = every control (追加 / 複製 / 削除 / グループ /
+   エフェクト / FPS / 再生) in one wrapping row that always stays
+   under the strip. The controls used to sit in a right-hand column
+   beside the strip and squeeze the frames to a sliver. */
+body.layout-mobile .frames-row{flex-direction:column;align-items:stretch;gap:6px}
+body.layout-mobile .frames-strip{flex:none}
+body.layout-mobile .frames-ctl{flex-direction:row;flex-wrap:wrap;gap:5px;align-items:center}
+body.layout-mobile .frames-ctl .row{flex-wrap:wrap}
+
+/* re-tapping the selected tool in the rail hides ONLY its option
+   dialog (the tool stays selected; see toolDlgHiddenFor in the JS).
+   Same selector shape as the float rule above, plus the body class,
+   so it out-specifies the panels' own #id.show{display:block}. */
+body.layout-mobile.tool-dlg-hidden .side:not(.side-right) .panel:not(#panelTools):not(#panelLayers){display:none}
 </style>
 </head>
 <body>
@@ -5016,11 +5067,23 @@ function syncTempMoveUI(){
   });
   $("toolLabel").textContent = shiftTempMove? "移動" : TOOLNAMES[tool];
 }
+/* Mobile layout only: re-tapping the already-selected tool in the
+   rail hides just that tool's option dialog (図形設定など) while the
+   tool itself stays selected; tapping it again brings the dialog
+   back. Holds the tool whose dialog is currently hidden, or null.
+   Picking a DIFFERENT tool (rail, keyboard, menu — anything that
+   goes through setTool) clears the hidden state, so the newly
+   chosen tool's dialog always appears as before. */
+var toolDlgHiddenFor=null;
+function syncToolDlgHidden(){
+  document.body.classList.toggle("tool-dlg-hidden", !!toolDlgHiddenFor);
+}
 function setTool(t){
   /* switching tools settles a floating move / scale where it floats */
   if(floatMove && t!=="move") commitFloat();
   if(floatScale && t!=="scale") commitScale();
   if(t!=="select" && shiftTempMove){ shiftTempMove=false; }
+  if(toolDlgHiddenFor && toolDlgHiddenFor!==t){ toolDlgHiddenFor=null; syncToolDlgHidden(); }
   tool=t;
   document.querySelectorAll("#toolGrid .tool-btn").forEach(function(b){ b.classList.toggle("is-on", b.dataset.tool===t); });
   $("toolLabel").textContent=TOOLNAMES[t];
@@ -5036,7 +5099,17 @@ function setTool(t){
   if(t==="chip") loadPipoyaSheet();
 }
 document.querySelectorAll("#toolGrid .tool-btn").forEach(function(b){
-  b.addEventListener("click",function(){ setTool(b.dataset.tool); });
+  b.addEventListener("click",function(){
+    var t=b.dataset.tool;
+    /* mobile: re-tapping the selected tool toggles ONLY its option
+       dialog; the tool stays selected and setTool is not re-run */
+    if(document.body.classList.contains("layout-mobile") && t===tool){
+      toolDlgHiddenFor = (toolDlgHiddenFor===t)? null : t;
+      syncToolDlgHidden();
+      return;
+    }
+    setTool(t);
+  });
   b.addEventListener("contextmenu",function(e){
     e.preventDefault();
     var t=b.dataset.tool;
