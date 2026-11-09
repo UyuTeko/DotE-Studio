@@ -28,8 +28,18 @@
   --checker1:#ffffff; --checker2:#d9d9d9;
   --shadow:4px 4px 0 #26221c; --shadow-sm:2px 2px 0 #26221c;
 }
+/* dark palette: follows the OS in auto mode, and can be forced either
+   way from the theme switch (data-theme on <html> wins over the OS) */
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#171923; --bg2:#12141d; --panel:#232636; --panel2:#1c1f2e;
+  --ink:#f2eee3; --ink2:#a7a294; --line:#0c0d13; --line-soft:#3a3e55;
+  --accent:#ff6a4d; --teal:#2dd4bf;
+  --checker1:#3c4054; --checker2:#2b2e40;
+  --shadow:4px 4px 0 #0c0d13; --shadow-sm:2px 2px 0 #0c0d13;
+}
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     color-scheme: dark;
     --bg:#171923; --bg2:#12141d; --panel:#232636; --panel2:#1c1f2e;
     --ink:#f2eee3; --ink2:#a7a294; --line:#0c0d13; --line-soft:#3a3e55;
@@ -174,6 +184,7 @@ label{font-size:11px;color:var(--ink2);display:block;margin-bottom:3px}
 
 /* right side */
 .preview-flex{display:flex;gap:10px;align-items:flex-start}
+.preview-flex .px-btn{font-size:12px;padding-left:4px;padding-right:4px}
 .preview-box{
   width:68px;height:68px;flex:none;border:2px solid var(--line);box-shadow:var(--shadow-sm);cursor:zoom-in;
   background:conic-gradient(var(--checker1) 0 25%, var(--checker2) 0 50%, var(--checker1) 0 75%, var(--checker2) 0);
@@ -516,6 +527,57 @@ body.home-open .topbar,body.home-open .workspace{display:none}
 @media (max-width:640px){.imp-layout{flex-direction:column}.imp-side{width:100%}}
 
 @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
+
+/* ===== touch (iPad etc.): bigger tap targets, no double-tap zoom ===== */
+body{touch-action:manipulation}
+@media (pointer:coarse){
+  .px-btn{padding:9px 12px;font-size:14px}
+  .tool-btn{padding:11px 1px 9px;font-size:12px}
+  .tool-btn svg{width:22px;height:22px}
+  .menu-btn{padding:10px 12px;font-size:14px}
+  .menu-panel button{padding:11px 10px;font-size:14px}
+  .seg button{padding:9px 0;font-size:13px}
+  .layer-row{min-height:40px}
+  .layer-row .l-eye,.layer-row .l-col{width:30px;height:30px}
+  .frame-thumb{width:56px;height:56px}
+  .frames-ctl .px-btn{padding:8px 10px}
+  .swatch{min-height:26px}
+  input[type="range"]{height:30px}
+  .ctx-menu button{padding:11px 10px;font-size:14px}
+  .home-pin{padding:6px 10px}
+}
+/* landscape tablets: keep the three-column editor, just a little tighter */
+@media (min-width:1081px) and (max-width:1280px) and (orientation:landscape){
+  .workspace{grid-template-columns:224px minmax(0,1fr) 240px}
+}
+
+/* home cards are never natively draggable: dragging a card used to start
+   an OS image drag of the thumbnail, whose ghost could be left behind
+   on screen after the drag ended */
+.home-card{user-select:none;-webkit-user-select:none}
+.home-thumb img{-webkit-user-drag:none;user-select:none}
+
+/* the whole stage (canvas + its frame) never offers the OS callout */
+.canvas-area{-webkit-touch-callout:none}
+.canvas-area canvas{-webkit-touch-callout:none}
+
+/* ===== how-to slides ===== */
+.how-dialog{width:min(600px,96vw)}
+.how-stage{border:2px solid var(--line);box-shadow:var(--shadow-sm);background:var(--panel2);padding:10px;display:flex;align-items:center;justify-content:center}
+.how-stage svg{width:100%;height:auto;max-height:300px;display:block}
+.how-title{font-size:17px;margin:14px 0 5px}
+.how-text{font-size:13px;line-height:1.8;margin:0;min-height:96px}
+.how-nav{display:flex;align-items:center;gap:8px;margin-top:12px}
+.how-dots{display:flex;gap:6px;flex:1;justify-content:center}
+.how-dot{width:12px;height:12px;padding:0;border:2px solid var(--line);background:var(--panel);cursor:pointer}
+.how-dot.is-on{background:var(--accent)}
+.how-count{font-size:12px;color:var(--ink2);flex:none}
+
+/* ===== theme colour swatches (extension) ===== */
+.accent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.accent-sw{border:2px solid var(--line);box-shadow:var(--shadow-sm);padding:0;height:52px;cursor:pointer;position:relative}
+.accent-sw span{position:absolute;left:0;right:0;bottom:0;font-size:10px;line-height:1.5;background:var(--panel);color:var(--ink);border-top:2px solid var(--line)}
+.accent-sw.is-on{outline:3px solid var(--ink);outline-offset:1px}
 </style>
 </head>
 <body>
@@ -548,7 +610,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
         <div class="msep"></div>
         <button id="mBrowserSave">ブラウザに保存</button>
         <button id="mSettings">保存の設定…</button>
-        <button id="mSaveProj">プロジェクト保存（.dspx）</button>
+        <button id="mSaveProj">PCに保存（.dspx）</button>
         <button id="mLoadProj">プロジェクトを開く…</button>
       </div>
     </div>
@@ -557,11 +619,11 @@ body.home-open .topbar,body.home-open .workspace{display:none}
       <div class="menu-panel">
         <button id="mExpOpen">書き出し設定…</button>
         <div class="msep"></div>
-        <button id="mExpPng">PNGで素早く保存</button>
-        <button id="mExpSheet">スプライトシート保存</button>
-        <button id="mExpGif">GIF（アニメ）保存</button>
-        <button id="mExpZip">ZIP（フレーム一式）保存</button>
-        <button id="mExpSvg" hidden>SVGで保存（今のフレーム）</button>
+        <button id="mExpPng">PNGで素早く書き出し</button>
+        <button id="mExpSheet">スプライトシート書き出し</button>
+        <button id="mExpGif">GIF（アニメ）書き出し</button>
+        <button id="mExpZip">ZIP（フレーム一式）書き出し</button>
+        <button id="mExpSvg" hidden>SVGで書き出し（今のフレーム）</button>
         <button id="mExpUri">data URIで書き出す…</button>
       </div>
     </div>
@@ -583,7 +645,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
         <button id="mInvert">色反転</button>
         <div class="msep"></div>
         <button id="mSelectAll">全て選択</button>
-        <button id="mClear">フレームを全部消す</button>
+        <button id="mClear">フレームを全て消す</button>
       </div>
     </div>
     <div class="menu" id="menuFx">
@@ -602,6 +664,9 @@ body.home-open .topbar,body.home-open .workspace{display:none}
         <button id="mOnion">タマネギスキン ON/OFF</button>
         <button id="mBg">背景を切り替える</button>
         <div class="msep"></div>
+        <button id="mTheme">テーマ：自動</button>
+        <button id="mAccent" hidden>テーマカラー…</button>
+        <div class="msep"></div>
         <button id="mFit">画面に合わせる（フィット）</button>
         <button id="mActual">原寸の4倍で表示</button>
       </div>
@@ -618,7 +683,8 @@ body.home-open .topbar,body.home-open .workspace{display:none}
         <div class="help-txt"><b>Alt+ドラッグ</b>移動ツールで選択範囲を複製しながら移動</div>
         <div class="help-txt"><b>Shift+クリック</b>ペンで前の点から直線を引く</div>
         <div class="help-txt"><b>矢印キー</b>選択範囲の中身を1pxずつ移動</div>
-        <div class="help-txt"><b>Ctrl+S</b>プロジェクト保存（.dspx）</div>
+        <div class="help-txt"><b>Ctrl+S</b>PCに保存（.dspx）</div>
+        <div class="help-txt"><b>2本指</b>タブレットでは、2本指でつまむと拡大・縮小、2本指のまま動かすと移動（パン）できます。1本指とApple Pencilは描画です</div>
         <div class="help-txt"><b>中ボタンドラッグ</b>キャンバス内を移動（パン）</div>
         <div class="help-txt"><b>B / E / G / I</b>ペン・消し・塗り・スポイト</div>
         <div class="help-txt"><b>L / R / M / Y</b>直線・図形・移動・ミラー</div>
@@ -647,8 +713,8 @@ body.home-open .topbar,body.home-open .workspace{display:none}
       <option value="custom">自由に指定…</option>
     </select>
     <span class="sep"></span>
-    <label class="tb-num-label">コラム <input type="number" id="sheetColsInp" class="tb-num" min="1" max="64" value="4" aria-label="スプライトシートの列（コラム）"></label>
-    <label class="tb-num-label">ロウ <input type="number" id="sheetRowsInp" class="tb-num" min="1" max="64" value="1" aria-label="スプライトシートの行（ロウ）"></label>
+    <label class="tb-num-label">列 <input type="number" id="sheetColsInp" class="tb-num" min="1" max="64" value="4" aria-label="スプライトシートの列"></label>
+    <label class="tb-num-label">行 <input type="number" id="sheetRowsInp" class="tb-num" min="1" max="64" value="1" aria-label="スプライトシートの行"></label>
   </div>
   <div class="save-status" id="saveStatus" title="保存状態"><span id="ssPc">PC：未保存</span><br><span id="ssBr">ブラウザ：未保存</span></div>
   <div class="spacer"></div>
@@ -680,9 +746,12 @@ body.home-open .topbar,body.home-open .workspace{display:none}
       </div>
       <div class="home-actions">
         <button class="px-btn primary" id="homeNewBtn">＋ 新規プロジェクト</button>
-        <button class="px-btn teal" id="homeContinueBtn" hidden>つづきから</button>
+        <button class="px-btn teal" id="homeContinueBtn" hidden>続きから</button>
         <button class="px-btn" id="homeOpenFileBtn">PCから開く（.dspx）…</button>
         <button class="px-btn" id="homeBackBtn">エディタに戻る</button>
+        <button class="px-btn" id="homeHowBtn">つかいかた</button>
+        <button class="px-btn" id="homeThemeBtn" title="ライトモード／ダークモードを切り替えます">テーマ：自動</button>
+        <button class="px-btn" id="homeAccentBtn" hidden>テーマカラー</button>
         <button class="px-btn home-ext-btn" id="homeExtBtn" title="拡張機能の有効・無効を切り替えます">拡張機能</button>
       </div>
     </div>
@@ -701,7 +770,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
     <div class="storage-bar" id="storageBar" hidden><i></i></div>
     <h2 class="home-sec">保存したプロジェクト</h2>
     <div class="home-grid" id="homeGrid"></div>
-    <div class="home-empty" id="homeEmpty" hidden>まだブラウザに保存したプロジェクトがありません。<br>エディタの「ファイル → ブラウザに保存」で保存すると、ここに並びます。各プロジェクトには、最新のバージョンがPCにファイルとして保存されているかどうかも表示されます。</div>
+    <div class="home-empty" id="homeEmpty" hidden>まだブラウザに保存したプロジェクトがありません。<br>エディタの「ファイル → ブラウザに保存」で保存すると、ここに並びます。各プロジェクトには、最新版がPCにファイルとして保存されているかどうかも表示されます。</div>
     <input type="file" id="homeDspxFile" accept=".dspx,.json,application/json" hidden>
     <input type="file" id="homeRestoreFile" accept=".json,application/json" hidden>
   </div>
@@ -854,7 +923,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
         <button class="px-btn" id="bgBtn">背景：市松</button>
         <button class="px-btn" id="fitBtn">フィット</button>
       </div>
-      <div class="canvas-area" id="canvasArea">
+      <div class="canvas-area" id="canvasArea" oncontextmenu="return false">
         <div class="canvas-wrap" id="canvasWrap" oncontextmenu="return false">
           <canvas id="mainCanvas" width="32" height="32" oncontextmenu="return false"></canvas>
           <canvas id="overlayCanvas" width="32" height="32" oncontextmenu="return false"></canvas>
@@ -903,12 +972,12 @@ body.home-open .topbar,body.home-open .workspace{display:none}
       <div class="preview-flex">
         <div class="preview-box" id="previewBox" title="タップで拡大"><canvas id="previewCanvas" width="32" height="32"></canvas></div>
         <div style="flex:1;min-width:0">
-          <button class="px-btn" id="sheetBtn" style="width:100%">スプライトシート保存</button>
+          <button class="px-btn" id="sheetBtn" style="width:100%">スプライトシート書き出し</button>
           <label class="mt">PNG拡大率</label>
           <div class="seg" id="scaleSeg">
             <button data-scale="1" class="is-on">×1</button><button data-scale="2">×2</button><button data-scale="4">×4</button><button data-scale="8">×8</button><button data-scale="16">×16</button>
           </div>
-          <button class="px-btn primary mt" id="exportBtn2" style="width:100%">今のフレームをPNG保存</button>
+          <button class="px-btn primary mt" id="exportBtn2" style="width:100%">今のフレームをPNG書き出し</button>
         </div>
       </div>
     </section>
@@ -1016,8 +1085,8 @@ body.home-open .topbar,body.home-open .workspace{display:none}
     <div class="exp-row" id="expSheetRow">
       <label>シート設定</label>
       <div class="mini-row">
-        <div style="flex:1"><label>列（コラム）</label><input type="number" id="expCols" min="1" max="64" value="4"></div>
-        <div style="flex:1"><label>行（ロウ）</label><input type="number" id="expRows" min="1" max="64" value="1"></div>
+        <div style="flex:1"><label>列</label><input type="number" id="expCols" min="1" max="64" value="4"></div>
+        <div style="flex:1"><label>行</label><input type="number" id="expRows" min="1" max="64" value="1"></div>
         <div style="flex:1"><label>フレーム間の余白 px</label><input type="number" id="expPad" min="0" max="128" value="0"></div>
       </div>
       <p class="note" style="margin-top:4px">フレームの枚数に合わせて、列と行は一方を変えるともう一方も自動で変わります。</p>
@@ -1033,7 +1102,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
       <button class="px-btn primary" id="expGoBtn" style="flex:2">書き出す</button>
       <button class="px-btn" id="expCloseBtn">閉じる</button>
     </div>
-    <p class="note">作業データの保存は ファイル → プロジェクト保存（.dspx）です。</p>
+    <p class="note">作業データの保存は ファイル → PCに保存（.dspx）です。</p>
   </div>
 </div>
 
@@ -1049,7 +1118,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
     <button class="px-btn teal mb" id="fxAddBtn" style="width:100%">＋ エフェクトを追加</button>
     <div class="mini-row mt">
       <button class="px-btn teal" id="fxBakeBtn2">焼き込む</button>
-      <button class="px-btn" id="fxAllOffBtn">すべて外す</button>
+      <button class="px-btn" id="fxAllOffBtn">全て外す</button>
       <button class="px-btn" id="fxCloseBtn">閉じる</button>
     </div>
     <p class="note">選んだ対象（レイヤー／レイヤーグループ／フレーム／フレームグループ）にかかる非破壊エフェクトです。「＋ エフェクトを追加」から1つずつ追加して調整します。グループにかけると中身全体に効きます。「焼き込む」とドットに反映されます。</p>
@@ -1057,8 +1126,8 @@ body.home-open .topbar,body.home-open .workspace{display:none}
 </div>
 
 <div class="exp-backdrop" id="impBackdrop" hidden>
-  <div class="panel exp-dialog imp-dialog" role="dialog" aria-label="画像の取り込み">
-    <h2>画像の取り込み</h2>
+  <div class="panel exp-dialog imp-dialog" role="dialog" aria-label="画像の読み込み">
+    <h2>画像の読み込み</h2>
     <div class="imp-layout">
     <div class="imp-main">
     <p class="note" id="impInfo" style="margin-top:0">—</p>
@@ -1084,8 +1153,8 @@ body.home-open .topbar,body.home-open .workspace{display:none}
     <div class="exp-row" id="impSheetRow" hidden>
       <label>スプライトシートの分割設定</label>
       <div class="mini-row">
-        <div style="flex:1"><label>列（コラム）</label><input type="number" id="impCols" min="1" max="64" value="4"></div>
-        <div style="flex:1"><label>行（ロウ）</label><input type="number" id="impRows" min="1" max="64" value="1"></div>
+        <div style="flex:1"><label>列</label><input type="number" id="impCols" min="1" max="64" value="4"></div>
+        <div style="flex:1"><label>行</label><input type="number" id="impRows" min="1" max="64" value="1"></div>
       </div>
       <div class="mini-row mt">
         <div style="flex:1"><label>1枚の横サイズ px</label><input type="number" id="impCellW" min="1" value="32"></div>
@@ -1122,7 +1191,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
       <button class="px-btn mt" id="impPalBtn" style="width:100%">画像からパレットを抽出して追加</button>
     </div>
     <div class="imp-sec">
-      <div class="imp-sec-title">取り込み範囲の切り抜き（空欄＝全体）</div>
+      <div class="imp-sec-title">読み込み範囲の切り抜き（空欄＝全体）</div>
       <div class="imp-grid4">
         <div><label>開始 X</label><input type="number" id="impCropX" min="0" placeholder="0"></div>
         <div><label>開始 Y</label><input type="number" id="impCropY" min="0" placeholder="0"></div>
@@ -1139,13 +1208,13 @@ body.home-open .topbar,body.home-open .workspace{display:none}
     </div>
     </div>
     <div class="imp-side">
-      <label>取り込み結果プレビュー</label>
+      <label>読み込み結果プレビュー</label>
       <div class="imp-prev-box"><canvas id="impPrevCanvas" width="204" height="204"></canvas></div>
       <p class="note" id="impPrevInfo">—</p>
     </div>
     </div>
     <div class="mini-row mt">
-      <button class="px-btn primary" id="impGoBtn" style="flex:2">取り込む</button>
+      <button class="px-btn primary" id="impGoBtn" style="flex:2">読み込む</button>
       <button class="px-btn" id="impCancelBtn">キャンセル</button>
     </div>
   </div>
@@ -1199,7 +1268,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
       <button class="px-btn primary" id="npGoBtn" style="flex:2">作成する</button>
       <button class="px-btn" id="npCancelBtn">キャンセル</button>
     </div>
-    <p class="note">前のプロジェクトのサイズ・コラム・ロウ・表示モードなどは引き継がれず、ここで決めた設定から始まります。今のプロジェクトは（自動保存ONなら）ブラウザに保存されてから切り替わります。</p>
+    <p class="note">前のプロジェクトのサイズ・列・行・表示モードなどは引き継がれず、ここで決めた設定から始まります。今のプロジェクトは（自動保存ONなら）ブラウザに保存されてから切り替わります。</p>
   </div>
 </div>
 
@@ -1243,6 +1312,142 @@ body.home-open .topbar,body.home-open .workspace{display:none}
     <p class="dlg-msg" id="dlgMsg"></p>
     <input type="text" id="dlgInput" hidden spellcheck="false" style="margin-top:8px">
     <div class="dlg-btns" id="dlgBtns"></div>
+  </div>
+</div>
+
+<div class="exp-backdrop" id="howBackdrop" hidden>
+  <div class="panel exp-dialog how-dialog" role="dialog" aria-label="つかいかた">
+    <h2>つかいかた</h2>
+    <div class="how-stage" id="howStage">
+      <div class="how-slide">
+        <svg viewBox="0 0 320 170" role="img" aria-label="ホーム画面と新規プロジェクトボタンの図">
+          <rect x="10" y="10" width="300" height="150" fill="none" stroke="currentColor" stroke-width="3"/>
+          <rect x="10" y="10" width="300" height="24" style="fill:var(--panel2)" stroke="currentColor" stroke-width="3"/>
+          <circle cx="26" cy="22" r="4" style="fill:var(--accent)"/><circle cx="42" cy="22" r="4" style="fill:var(--amber)"/><circle cx="58" cy="22" r="4" style="fill:var(--teal)"/>
+          <rect x="196" y="48" width="100" height="26" style="fill:var(--accent)" stroke="currentColor" stroke-width="3"/>
+          <text x="246" y="65" font-size="12" fill="#fff" text-anchor="middle">＋ 新規プロジェクト</text>
+          <rect x="24" y="48" width="72" height="52" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/>
+          <rect x="36" y="58" width="10" height="10" style="fill:var(--accent)"/><rect x="48" y="58" width="10" height="10" style="fill:var(--teal)"/><rect x="36" y="70" width="10" height="10" style="fill:var(--blue)"/><rect x="48" y="70" width="10" height="10" style="fill:var(--amber)"/>
+          <rect x="24" y="112" width="72" height="8" style="fill:var(--line-soft)"/>
+          <rect x="108" y="48" width="72" height="52" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/>
+          <rect x="120" y="58" width="10" height="10" style="fill:var(--amber)"/><rect x="132" y="58" width="10" height="10" style="fill:var(--accent)"/><rect x="120" y="70" width="10" height="10" style="fill:var(--teal)"/><rect x="132" y="70" width="10" height="10" style="fill:var(--blue)"/>
+          <rect x="108" y="112" width="72" height="8" style="fill:var(--line-soft)"/>
+          <path d="M246 84 L246 128" stroke="currentColor" stroke-width="3"/><path d="M238 118 L246 130 L254 118" fill="none" stroke="currentColor" stroke-width="3"/>
+          <rect x="176" y="132" width="140" height="22" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/>
+          <text x="246" y="147" font-size="11" fill="currentColor" text-anchor="middle">名前・サイズ・フレーム数を決める</text>
+        </svg>
+      </div>
+      <div class="how-slide" hidden>
+        <svg viewBox="0 0 320 170" role="img" aria-label="キャンバスとツールの図">
+          <rect x="86" y="14" width="148" height="148" style="fill:var(--checker2)" stroke="currentColor" stroke-width="3"/>
+          <g stroke="currentColor" stroke-width="1" opacity=".35">
+            <path d="M105 14V162M124 14V162M143 14V162M162 14V162M181 14V162M200 14V162M219 14V162"/>
+            <path d="M86 33H234M86 52H234M86 71H234M86 90H234M86 109H234M86 128H234M86 147H234"/>
+          </g>
+          <g>
+            <rect x="124" y="52" width="19" height="19" style="fill:var(--accent)"/><rect x="143" y="52" width="19" height="19" style="fill:var(--accent)"/><rect x="181" y="52" width="19" height="19" style="fill:var(--accent)"/>
+            <rect x="124" y="71" width="19" height="19" style="fill:var(--accent)"/><rect x="162" y="71" width="19" height="19" style="fill:var(--amber)"/><rect x="181" y="71" width="19" height="19" style="fill:var(--accent)"/>
+            <rect x="143" y="90" width="19" height="19" style="fill:var(--accent)"/><rect x="162" y="90" width="19" height="19" style="fill:var(--accent)"/>
+            <rect x="143" y="109" width="19" height="19" style="fill:var(--teal)"/><rect x="162" y="109" width="19" height="19" style="fill:var(--teal)"/>
+          </g>
+          <rect x="14" y="14" width="56" height="30" style="fill:var(--amber)" stroke="currentColor" stroke-width="2"/><text x="42" y="33" font-size="11" fill="#26221c" text-anchor="middle">ペン</text>
+          <rect x="14" y="52" width="56" height="30" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/><text x="42" y="71" font-size="11" fill="currentColor" text-anchor="middle">消しゴム</text>
+          <rect x="14" y="90" width="56" height="30" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/><text x="42" y="109" font-size="11" fill="currentColor" text-anchor="middle">塗りつぶし</text>
+          <rect x="14" y="128" width="56" height="30" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/><text x="42" y="147" font-size="11" fill="currentColor" text-anchor="middle">スポイト</text>
+          <rect x="250" y="14" width="18" height="18" style="fill:var(--accent)" stroke="currentColor" stroke-width="2"/><rect x="272" y="14" width="18" height="18" style="fill:var(--amber)" stroke="currentColor" stroke-width="2"/><rect x="294" y="14" width="18" height="18" style="fill:var(--teal)" stroke="currentColor" stroke-width="2"/>
+          <rect x="250" y="36" width="18" height="18" style="fill:var(--blue)" stroke="currentColor" stroke-width="2"/><rect x="272" y="36" width="18" height="18" style="fill:var(--danger)" stroke="currentColor" stroke-width="2"/><rect x="294" y="36" width="18" height="18" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/>
+          <text x="281" y="72" font-size="11" fill="currentColor" text-anchor="middle">色は右のパレット</text>
+          <text x="281" y="96" font-size="11" fill="currentColor" text-anchor="middle">タブレットは</text>
+          <text x="281" y="112" font-size="11" fill="currentColor" text-anchor="middle">1本指で描画、</text>
+          <text x="281" y="128" font-size="11" fill="currentColor" text-anchor="middle">2本指で拡大・移動</text>
+        </svg>
+      </div>
+      <div class="how-slide" hidden>
+        <svg viewBox="0 0 320 170" role="img" aria-label="レイヤーとフレームの図">
+          <rect x="30" y="66" width="110" height="74" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/>
+          <rect x="38" y="52" width="110" height="74" style="fill:var(--panel2)" stroke="currentColor" stroke-width="2"/>
+          <rect x="46" y="38" width="110" height="74" style="fill:var(--panel)" stroke="currentColor" stroke-width="3"/>
+          <rect x="86" y="58" width="14" height="14" style="fill:var(--accent)"/><rect x="102" y="58" width="14" height="14" style="fill:var(--amber)"/><rect x="86" y="74" width="14" height="14" style="fill:var(--teal)"/><rect x="102" y="74" width="14" height="14" style="fill:var(--blue)"/>
+          <text x="101" y="152" font-size="11" fill="currentColor" text-anchor="middle">レイヤー（重ねる紙）</text>
+          <g stroke="currentColor" stroke-width="2">
+            <rect x="186" y="52" width="34" height="34" style="fill:var(--panel)"/><rect x="226" y="52" width="34" height="34" style="fill:var(--panel)"/><rect x="266" y="52" width="34" height="34" style="fill:var(--panel)"/>
+          </g>
+          <rect x="194" y="60" width="8" height="8" style="fill:var(--accent)"/><rect x="202" y="68" width="8" height="8" style="fill:var(--teal)"/>
+          <rect x="234" y="60" width="8" height="8" style="fill:var(--accent)"/><rect x="242" y="60" width="8" height="8" style="fill:var(--teal)"/>
+          <rect x="274" y="68" width="8" height="8" style="fill:var(--accent)"/><rect x="282" y="60" width="8" height="8" style="fill:var(--teal)"/>
+          <path d="M196 108 L290 108" stroke="currentColor" stroke-width="3"/><path d="M282 100 L294 108 L282 116" fill="none" stroke="currentColor" stroke-width="3"/>
+          <text x="243" y="140" font-size="11" fill="currentColor" text-anchor="middle">フレーム（アニメのコマ）</text>
+          <text x="243" y="158" font-size="11" fill="currentColor" text-anchor="middle">再生ボタンで動きを確認</text>
+        </svg>
+      </div>
+      <div class="how-slide" hidden>
+        <svg viewBox="0 0 320 170" role="img" aria-label="ブラウザ保存とPC保存の違いの図">
+          <rect x="18" y="26" width="132" height="96" style="fill:var(--panel)" stroke="currentColor" stroke-width="3"/>
+          <rect x="18" y="26" width="132" height="20" style="fill:var(--teal)" stroke="currentColor" stroke-width="3"/>
+          <circle cx="32" cy="36" r="3.5" fill="#fff"/><circle cx="44" cy="36" r="3.5" fill="#fff"/>
+          <rect x="34" y="60" width="44" height="44" style="fill:var(--checker2)" stroke="currentColor" stroke-width="2"/>
+          <rect x="42" y="68" width="10" height="10" style="fill:var(--accent)"/><rect x="54" y="68" width="10" height="10" style="fill:var(--amber)"/><rect x="42" y="80" width="10" height="10" style="fill:var(--teal)"/><rect x="54" y="80" width="10" height="10" style="fill:var(--blue)"/>
+          <rect x="88" y="66" width="48" height="8" style="fill:var(--line-soft)"/><rect x="88" y="80" width="48" height="8" style="fill:var(--line-soft)"/><rect x="88" y="94" width="32" height="8" style="fill:var(--line-soft)"/>
+          <text x="84" y="142" font-size="12" fill="currentColor" text-anchor="middle">ブラウザに保存</text>
+          <text x="84" y="160" font-size="11" fill="currentColor" text-anchor="middle">自動保存あり・ホームに並ぶ</text>
+          <rect x="188" y="34" width="86" height="88" style="fill:var(--panel)" stroke="currentColor" stroke-width="3"/>
+          <path d="M246 34 L274 62 L246 62 Z" style="fill:var(--panel2)" stroke="currentColor" stroke-width="3"/>
+          <text x="224" y="92" font-size="13" fill="currentColor" text-anchor="middle">.dspx</text>
+          <text x="231" y="142" font-size="12" fill="currentColor" text-anchor="middle">PCに保存（.dspx）</text>
+          <text x="231" y="160" font-size="11" fill="currentColor" text-anchor="middle">ファイルとして手元に残る</text>
+        </svg>
+      </div>
+      <div class="how-slide" hidden>
+        <svg viewBox="0 0 320 170" role="img" aria-label="書き出しの図">
+          <rect x="22" y="48" width="76" height="76" style="fill:var(--checker2)" stroke="currentColor" stroke-width="3"/>
+          <rect x="38" y="64" width="12" height="12" style="fill:var(--accent)"/><rect x="52" y="64" width="12" height="12" style="fill:var(--amber)"/><rect x="38" y="78" width="12" height="12" style="fill:var(--teal)"/><rect x="52" y="78" width="12" height="12" style="fill:var(--blue)"/><rect x="45" y="94" width="12" height="12" style="fill:var(--danger)"/>
+          <path d="M112 66 L156 66" stroke="currentColor" stroke-width="3"/><path d="M146 58 L158 66 L146 74" fill="none" stroke="currentColor" stroke-width="3"/>
+          <path d="M112 104 L156 104" stroke="currentColor" stroke-width="3"/><path d="M146 96 L158 104 L146 112" fill="none" stroke="currentColor" stroke-width="3"/>
+          <rect x="168" y="40" width="128" height="34" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/><text x="232" y="62" font-size="12" fill="currentColor" text-anchor="middle">PNG（画像）</text>
+          <rect x="168" y="84" width="128" height="34" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/><text x="232" y="106" font-size="12" fill="currentColor" text-anchor="middle">GIF（アニメ）</text>
+          <rect x="168" y="128" width="128" height="34" style="fill:var(--panel)" stroke="currentColor" stroke-width="2"/><text x="232" y="150" font-size="12" fill="currentColor" text-anchor="middle">ZIP / スプライトシート</text>
+          <text x="60" y="146" font-size="11" fill="currentColor" text-anchor="middle">完成した絵</text>
+        </svg>
+      </div>
+      <div class="how-slide" hidden>
+        <svg viewBox="0 0 320 170" role="img" aria-label="拡張機能とテーマの図">
+          <rect x="26" y="34" width="52" height="52" style="fill:var(--accent)" stroke="currentColor" stroke-width="3"/>
+          <rect x="86" y="34" width="52" height="52" style="fill:var(--teal)" stroke="currentColor" stroke-width="3"/>
+          <rect x="26" y="94" width="52" height="52" style="fill:var(--amber)" stroke="currentColor" stroke-width="3"/>
+          <rect x="86" y="94" width="52" height="52" style="fill:var(--panel)" stroke="currentColor" stroke-width="3"/>
+          <text x="82" y="164" font-size="11" fill="currentColor" text-anchor="middle">拡張機能（必要なものだけON）</text>
+          <circle cx="216" cy="60" r="20" style="fill:var(--amber)" stroke="currentColor" stroke-width="3"/>
+          <path d="M216 28v-8M216 92v8M184 60h-8M248 60h8M193 37l-6-6M239 37l6-6" stroke="currentColor" stroke-width="3"/>
+          <path d="M282 108 a17 17 0 1 1 -12 -29 a13 13 0 1 0 12 29z" style="fill:var(--blue)" stroke="currentColor" stroke-width="3"/>
+          <text x="228" y="140" font-size="11" fill="currentColor" text-anchor="middle">ライト／ダーク切替</text>
+          <circle cx="186" cy="118" r="8" style="fill:var(--accent)"/><circle cx="210" cy="118" r="8" style="fill:var(--teal)"/><circle cx="234" cy="118" r="8" style="fill:var(--blue)"/><circle cx="258" cy="118" r="8" style="fill:var(--danger)"/>
+          <text x="228" y="164" font-size="11" fill="currentColor" text-anchor="middle">テーマカラー拡張で色も変更可</text>
+        </svg>
+      </div>
+    </div>
+    <h3 class="how-title" id="howTitle"></h3>
+    <p class="how-text" id="howText"></p>
+    <div class="how-nav">
+      <button class="px-btn" id="howPrevBtn">← 前へ</button>
+      <div class="how-dots" id="howDots"></div>
+      <span class="how-count" id="howCount"></span>
+      <button class="px-btn" id="howNextBtn">次へ →</button>
+    </div>
+    <div class="mini-row mt">
+      <button class="px-btn primary" id="howCloseBtn" style="flex:1">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="exp-backdrop" id="accentBackdrop" hidden>
+  <div class="panel exp-dialog" role="dialog" aria-label="テーマカラー" style="width:min(440px,94vw)">
+    <h2>テーマカラー</h2>
+    <p class="note" style="margin-top:0">アプリのアクセントカラーを選びます。拡張機能「テーマカラー」がONのときだけ反映されます。</p>
+    <div class="accent-grid" id="accentGrid"></div>
+    <div class="mini-row mt">
+      <button class="px-btn" id="accentResetBtn">初期の色に戻す</button>
+      <button class="px-btn primary" id="accentCloseBtn" style="flex:1">閉じる</button>
+    </div>
   </div>
 </div>
 
@@ -1490,7 +1695,11 @@ document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeCtx()
    with their own menu set ctxFresh via showCtx; anything else falls
    back to this general menu, so no spot is dead. */
 document.addEventListener("contextmenu",function(e){
-  if(ctxFresh){ ctxFresh=false; return; }
+  /* ctxFresh means a surface handler already opened the app menu for
+     this very event — but the OS menu must STILL be suppressed, so
+     preventDefault runs before the early return (returning without it
+     was a hole the system menu could slip through). */
+  if(ctxFresh){ ctxFresh=false; e.preventDefault(); return; }
   if(wrap.contains(e.target)) return; /* the canvas has its own handling */
   e.preventDefault();
   showCtx(e.clientX, e.clientY, [
@@ -1508,7 +1717,7 @@ document.addEventListener("contextmenu",function(e){
     {label:"画面に合わせる（フィット）", fn:function(){ fitZoom(); }},
     {sep:true},
     {label:"書き出し設定…", fn:function(){ openExport(); }},
-    {label:"プロジェクト保存（.dspx）", fn:function(){ doSaveProj(); }}
+    {label:"PCに保存（.dspx）", fn:function(){ doSaveProj(); }}
   ]);
 });
 
@@ -1627,7 +1836,7 @@ function drawGrid(){
   gctx.setTransform(dpr,0,0,dpr,0,0);
   gctx.clearRect(0,0,w,h);
   if(!showGrid) return;
-  var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  var dark = isDarkTheme();
   var vd=viewDims();
   var stepX=w/vd.w, stepY=h/vd.h;
   function line(x0,y0,x1,y1){
@@ -2459,10 +2668,45 @@ function renderRecent(){
     row.appendChild(b);
   });
 }
+/* ============ two-finger touch gestures (iPad / tablets) ============
+   One finger — and the Apple Pencil (pointerType "pen") — draws
+   exactly like a mouse. When a second touch finger lands, the canvas
+   switches to gesture mode: pinching zooms around the fingers'
+   midpoint and moving both fingers pans. The stroke the first finger
+   was making is cancelled (pixels already down stay down) and the
+   remaining finger never resumes drawing when the gesture ends. */
+var touchPts=new Map();   /* pointerId -> {x, y} of live touch pointers */
+var touchGesture=null;    /* {d, mx, my} while two fingers are down */
+function gestureMid(){
+  var pts=[]; touchPts.forEach(function(p){ pts.push(p); });
+  return { x:(pts[0].x+pts[1].x)/2, y:(pts[0].y+pts[1].y)/2,
+           d:Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y) };
+}
+function cancelStrokeForGesture(){
+  drawing=false; panDrag=null; pendingRight=null;
+  selMode=null; selStart=null; moveMode=null; moveBase=null; moveData=null;
+  drawFrameOverride=null; strokeFrame=null;
+  octx.clearRect(0,0,overC.width,overC.height);
+  wrap.classList.remove("panning"); area.classList.remove("panning");
+  render();
+}
 /* Middle-button drag pans the canvas inside its area. */
 wrap.addEventListener("mousedown",function(e){ if(e.button===1) e.preventDefault(); });
 wrap.addEventListener("auxclick",function(e){ if(e.button===1) e.preventDefault(); });
 wrap.addEventListener("pointerdown",function(e){
+  if(e.pointerType==="touch"){
+    touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
+    if(touchPts.size===2 && !touchGesture){
+      cancelStrokeForGesture();
+      var g0=gestureMid();
+      touchGesture={d:Math.max(10,g0.d), mx:g0.x, my:g0.y};
+      e.preventDefault();
+      try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
+      return;
+    }
+    if(touchGesture){ e.preventDefault(); return; }
+  }
+  if(touchGesture) return;
   if(e.button===1){
     e.preventDefault();
     wrap.setPointerCapture(e.pointerId);
@@ -2516,14 +2760,14 @@ wrap.addEventListener("pointerdown",function(e){
        layer's raw colour (the flattened colour may be a blend that no
        layer literally holds, which is why replace used to miss) */
     var target=topColorAt(p.x,p.y);
-    if(!target){ toast("透明ピクセルは置きかえられません"); drawFrameOverride=null; strokeFrame=null; return; }
+    if(!target){ toast("透明ピクセルは置き換えられません"); drawFrameOverride=null; strokeFrame=null; return; }
     if(target===repTo){ toast("もうその色です（置換先は左の設定で変更できます）"); drawFrameOverride=null; strokeFrame=null; return; }
     pushHistory();
     var n=0;
     eachNode(frames[curDrawFrameIdx()].layers,function(m){ if(m.type==="layer") n+=replaceInData(m.data, target, repTo); });
     setRepFrom(target);
     addRecent(repTo); renderAll();
-    toast(target+" → "+repTo+" に "+n+"px 置きかえました（全レイヤー）");
+    toast(target+" → "+repTo+" に "+n+"px 置き換えました（全レイヤー）");
     drawFrameOverride=null; strokeFrame=null;
     return;
   }
@@ -2587,6 +2831,19 @@ wrap.addEventListener("pointerdown",function(e){
   addRecent(c); render();
 });
 wrap.addEventListener("pointermove",function(e){
+  if(e.pointerType==="touch" && touchPts.has(e.pointerId)){
+    touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
+    if(touchGesture){
+      var gm=gestureMid();
+      var gf=gm.d/Math.max(10,touchGesture.d);
+      if(Math.abs(gf-1)>0.001) zoomAt(gm.x, gm.y, stagePx*gf);
+      panX+=gm.x-touchGesture.mx; panY+=gm.y-touchGesture.my;
+      clampPan(); layoutWrap();
+      touchGesture={d:Math.max(10,gm.d), mx:gm.x, my:gm.y};
+      return;
+    }
+  }
+  if(touchGesture) return;
   if(panDrag){
     panX=panDrag.px+(e.clientX-panDrag.x);
     panY=panDrag.py+(e.clientY-panDrag.y);
@@ -2608,7 +2865,7 @@ wrap.addEventListener("pointermove",function(e){
     return;
   }
   $("posLabel").textContent = (viewMode==="sheet" && hoverFrameIdx!=null)
-    ? ("コマ"+(hoverFrameIdx+1)+" ・ "+p.x+", "+p.y) : (p.x+", "+p.y);
+    ? ("フレーム"+(hoverFrameIdx+1)+" ・ "+p.x+", "+p.y) : (p.x+", "+p.y);
   /* in sheet mode the colour readout belongs to the frame under the
      cursor, which is not always the current frame */
   var hcFrame=(viewMode==="sheet" && hoverFrameIdx!=null)? hoverFrameIdx : curFrame;
@@ -2693,6 +2950,13 @@ function showCanvasCtx(cx, cy, x, y){
   ]);
 }
 function endStroke(e){
+  if(e && e.pointerType==="touch"){
+    touchPts.delete(e.pointerId);
+    if(touchGesture){
+      if(touchPts.size<2) touchGesture=null;
+      return; /* the gesture owned this pointer: no stroke end, no menu */
+    }
+  }
   strokeFrame=null;
   if(pendingRight){
     var pr=pendingRight; pendingRight=null; drawFrameOverride=null;
@@ -2788,6 +3052,18 @@ document.addEventListener("contextmenu",function(e){
   var t=e.target;
   if(t && t.closest && t.closest(".canvas-wrap")) e.preventDefault();
 }, true);
+/* The whole stage panel (canvas area, its header and the status bar)
+   is what the user points at as "the canvas": swallow the OS menu for
+   anything inside it in the capture phase, before any other handler
+   runs. App menus are unaffected — they open from pointer handlers
+   (canvas) or the document-level fallback (which still receives the
+   event for spots outside the canvas wrap and shows the app menu). */
+var stagePanelEl=document.querySelector(".stage-panel");
+if(stagePanelEl){
+  stagePanelEl.addEventListener("contextmenu",function(e){
+    e.preventDefault();
+  }, true);
+}
 /* Panning works from anywhere in the canvas area — including the empty
    space around the canvas — not just from on top of the canvas itself.
    (When the pan starts on the canvas, the wrap's own handlers run the
@@ -2875,7 +3151,7 @@ var TOOLHELP={
   line:"ドラッグで直線を引きます。離すまでプレビューが出ます。太さはブラシの太さです。ドラッグ中は下のステータスバーに線の長さと角度が出ます。Shiftを押しながらだと5°刻みにスナップします。",
   shape:"ドラッグで図形を描きます。種類（四角／円／三角／菱形）・中・起点は、選んだときに左に出る「図形設定」で切り替えます。Shiftを押しながらだと正方形になります。",
   select:"ドラッグで範囲を選びます（矩形／投げ縄は左のボックスで切替）。クリックだけでは選択されず、選択が解除されます。Shift+ドラッグで今の選択に追加。中身の移動は「移動」ツールで行います。",
-  replace:"クリックした色を、置換先の色にすべて置きかえます（今のフレームの全レイヤー）。選ぶと左に置換元／置換先を指定できるボックスが出ます。",
+  replace:"クリックした色を、置換先の色に全て置き換えます（今のフレームの全レイヤー）。選ぶと左に置換元／置換先を指定できるボックスが出ます。",
   move:"選択範囲の中をドラッグすると中身だけが動きます。選択範囲がないとき（または外からドラッグしたとき）は、掴んだマスの1マスだけが動きます（そのマスを持つ一番上のレイヤーごと）。選択範囲はキャンバスの端を超えて動かせて、外に出た分は消えます。Alt+ドラッグで複製しながら移動、矢印キーでも1pxずつ動かせます。",
   mirror:"ペンのように描けて、左右／上下ミラーが効きます。選ぶと左にミラーのON/OFFボックスが出ます（他のツールでもミラーは効きます）。",
   text:"拡張機能「文字スタンプ」で追加されるツールです。Pixel M Plus 12で描いた文字をドットとして読み取り、今の色でキャンバスに置きます。文字と大きさは、選んだときに左に出る「文字スタンプ設定」で決めます。クリックした位置が文字の左上になります。"
@@ -3015,7 +3291,7 @@ $("repToCurBtn").addEventListener("click",function(){
 $("repFromPickBtn").addEventListener("click",function(){
   repPicking=!repPicking;
   this.classList.toggle("is-on",repPicking);
-  toast(repPicking? "キャンバスで置きかえたい色をクリックしてね" : "キャンバスから選ぶのをやめました");
+  toast(repPicking? "キャンバスで置き換えたい色をクリックしてね" : "キャンバスから選ぶのをやめました");
 });
 function doReplace(all){
   if(!repFrom){ toast("置換元が未設定です（使用色一覧の「置換元」でも選べます）"); return; }
@@ -3025,7 +3301,7 @@ function doReplace(all){
   if(all) frames.forEach(function(fr){ eachNode(fr.layers,function(m){ if(m.type==="layer") n+=replaceInData(m.data,repFrom,repTo); }); });
   else eachNode(frames[curFrame].layers,function(m){ if(m.type==="layer") n+=replaceInData(m.data,repFrom,repTo); });
   addRecent(repTo); renderAll();
-  toast(n? (repFrom+" → "+repTo+" に "+n+"px 置きかえました") : "その色は使われていませんでした");
+  toast(n? (repFrom+" → "+repTo+" に "+n+"px 置き換えました") : "その色は使われていませんでした");
 }
 $("repFrameBtn").addEventListener("click",function(){ doReplace(false); });
 $("repAllBtn").addEventListener("click",function(){ doReplace(true); });
@@ -3038,8 +3314,9 @@ $("repAllBtn").addEventListener("click",function(){ doReplace(true); });
 var npBg="transp";
 function openNewDialog(){
   /* save the outgoing project first (when auto-save is on) so switching
-     projects never loses work */
-  if(settings.auto && !document.body.classList.contains("home-open")) saveToBrowser(true);
+     projects never loses work — but never materialise the untouched
+     blank starter as a stored project */
+  if(settings.auto && hasWorkToSave() && !document.body.classList.contains("home-open")) saveToBrowser(true);
   $("npName").value="ドット絵";
   $("npW").value=32; $("npH").value=32; $("npFrames").value=1;
   npBg="transp"; setSeg("npBgSeg","v","transp");
@@ -3073,7 +3350,7 @@ $("npGoBtn").addEventListener("click",function(){
   viewMode="normal"; setSeg("viewModeSeg","m","normal");
   bgMode=0; wrap.style.background=""; wrap.style.backgroundSize=""; $("bgBtn").textContent="背景：市松";
   projName=name; $("projName").value=name;
-  curProjId=null; projPcSaved=false;
+  curProjId=null; projPcSaved=false; projLive=true;
   projRev=0; pcSavedRev=-1; pcSavedAt=null; browserSavedRev=-1; lastBrowserAt=null;
   manualZoom=false; panX=0; panY=0;
   syncCanvasSize(true);
@@ -3270,7 +3547,7 @@ function buildLayerRows(nodes, container, depth){
     drawFrameToA(cv.getContext("2d"), compositeListA([n],true), 1);
     th.appendChild(cv); row.appendChild(th);
     var nm=document.createElement("span"); nm.className="layer-name"; nm.textContent=n.name;
-    nm.title=n.name+"（ダブルクリックで名前変更）";
+    nm.title=n.name+"（ダブルクリックで名前の変更）";
     nm.addEventListener("dblclick",function(e){ e.stopPropagation(); startRename(n, nm); });
     row.appendChild(nm);
     if(n.type==="group"){ var g=document.createElement("span"); g.className="l-grp"; g.textContent="グループ"; row.appendChild(g); }
@@ -3680,7 +3957,7 @@ $("fxCloseBtn").addEventListener("click",closeFx);
 $("fxBackdrop").addEventListener("click",function(e){ if(e.target===this) closeFx(); });
 $("fxAllOffBtn").addEventListener("click",function(){
   var n=fxTargetNode(); if(!n) return;
-  n.fx=defaultEffects(); buildFxList(); renderAll(); toast("エフェクトをすべて外しました");
+  n.fx=defaultEffects(); buildFxList(); renderAll(); toast("エフェクトを全て外しました");
 });
 $("fxBakeBtn2").addEventListener("click",function(){
   var n=fxTargetNode(); if(!n || !fxTarget) return;
@@ -3955,14 +4232,28 @@ function doSaveProj(){
 var LS_KEY="dot-studio.projects.v1";
 var SET_KEY="dot-studio.settings.v1";
 var curProjId=null, projPcSaved=false;
+/* true once a real project session has begun (created via the 新規
+   dialog / a character / an import, or opened from a file or the
+   store). The untouched starter project at app start is NOT live. */
+var projLive=false;
 var projRev=0, pcSavedRev=-1, pcSavedAt=null, browserSavedRev=-1, lastBrowserAt=null;
 var quotaWarned=false, lastDeleted=null;
-var settings={auto:true, interval:60, lastId:null};
+var settings={auto:true, interval:60, lastId:null, theme:"auto", accent:null};
 function loadSettings(){
   try{ var s=JSON.parse(localStorage.getItem(SET_KEY)||"null"); if(s && typeof s==="object") settings=Object.assign(settings,s); }catch(e){}
 }
 function saveSettings(){ try{ localStorage.setItem(SET_KEY, JSON.stringify(settings)); }catch(e){} }
 loadSettings();
+/* The editor starts out holding an untouched blank "starter" project.
+   Auto-save must never materialise it into a stored record: a project
+   may only appear in the list when the user creates one (the 新規
+   dialog / a character / an import), opens one, explicitly saves, or
+   has actually drawn something (projRev > 0). The old beforeunload /
+   interval / go-home paths compared projRev (0) with browserSavedRev
+   (-1), saw a "difference", and saved the starter — one new blank
+   project per page reload. Every automatic save path now goes through
+   this guard; the manual ブラウザに保存 menu stays unconditional. */
+function hasWorkToSave(){ return projLive || curProjId!=null || projRev>0; }
 function loadStore(){
   try{
     var s=localStorage.getItem(LS_KEY);
@@ -4070,12 +4361,13 @@ function restartAutosave(){
   if(!settings.auto) return;
   autoTimer=setInterval(function(){
     if(document.body.classList.contains("home-open")) return;
+    if(!hasWorkToSave()) return; /* never store the untouched starter */
     if(projRev===browserSavedRev) return; /* nothing new to save */
     saveToBrowser(true);
   }, Math.max(10, settings.interval|0)*1000);
 }
 window.addEventListener("beforeunload",function(){
-  if(settings.auto && projRev!==browserSavedRev) saveToBrowser(true);
+  if(settings.auto && hasWorkToSave() && projRev!==browserSavedRev) saveToBrowser(true);
 });
 function applyLoadedProject(d){
   pushHistory();
@@ -4240,7 +4532,7 @@ function deleteStoredProject(rec){
   if(idx<0) return;
   var removed=st.splice(idx,1)[0];
   try{ writeStore(st); }catch(e){}
-  if(removed.id===curProjId) curProjId=null;
+  if(removed.id===curProjId){ curProjId=null; projLive=false; }
   if(settings.lastId===removed.id){ settings.lastId=null; saveSettings(); }
   lastDeleted={rec:removed, idx:idx};
   renderHome();
@@ -4322,7 +4614,7 @@ function renderHome(){
   if(settings.lastId) for(var li=0; li<store.length; li++) if(store[li].id===settings.lastId){ lastRec=store[li]; break; }
   var cont=$("homeContinueBtn");
   cont.hidden=!lastRec;
-  if(lastRec) cont.textContent="つづきから：「"+(lastRec.name||"プロジェクト")+"」";
+  if(lastRec) cont.textContent="続きから：「"+(lastRec.name||"プロジェクト")+"」";
   list.forEach(function(rec){
     var isCurrent=(rec.id===curProjId);
     /* for the project open in the editor right now, judge the PC state
@@ -4330,6 +4622,7 @@ function renderHome(){
     var pcOk = isCurrent? (pcState()==="ok") : !!rec.pcSaved;
     var pcAt = isCurrent? pcSavedAt : rec.pcSavedAt;
     var card=document.createElement("div"); card.className="home-card"+(rec.fav?" is-fav":"");
+    card.dataset.pid=rec.id;
     var pin=document.createElement("button");
     pin.className="px-btn home-pin"+(rec.fav?" is-on":"");
     pin.textContent=rec.fav? "ピン留め中" : "ピン留め";
@@ -4339,9 +4632,16 @@ function renderHome(){
     var th=document.createElement("div"); th.className="home-thumb";
     if(rec.thumb){
       var img=document.createElement("img"); img.src=rec.thumb; img.alt=rec.name+" のサムネイル";
+      /* never let the thumbnail become a native drag image: dragging a
+         card used to start an OS image drag whose ghost could stay on
+         screen after the drag ended (the reported 残像), and a drag
+         could also strand the hover animation on the card */
+      img.draggable=false;
+      img.addEventListener("dragstart",function(e){ e.preventDefault(); img.src=rec.thumb; });
       if(rec.anim){
         img.addEventListener("mouseenter",function(){ img.src=rec.anim; });
         img.addEventListener("mouseleave",function(){ img.src=rec.thumb; });
+        img.addEventListener("pointerdown",function(){ img.src=rec.thumb; });
       }
       th.appendChild(img);
     }
@@ -4370,7 +4670,7 @@ function renderHome(){
     dl.addEventListener("click",function(){ downloadStoredProject(rec); });
     var dup=document.createElement("button"); dup.className="px-btn"; dup.textContent="複製";
     dup.addEventListener("click",function(){ duplicateProject(rec); });
-    var ren=document.createElement("button"); ren.className="px-btn"; ren.textContent="名前変更";
+    var ren=document.createElement("button"); ren.className="px-btn"; ren.textContent="名前の変更";
     ren.addEventListener("click",function(){ renameProject(rec); });
     var del=document.createElement("button"); del.className="px-btn danger"; del.textContent="削除";
     del.addEventListener("click",function(){ requestDeleteProject(rec); });
@@ -4392,8 +4692,9 @@ function renderSettingsInfo(){
 function showHome(skipSave){
   /* going home always saves the current project first (auto-save ON);
      skipSave is only for the very first show at app start, when the
-     editor still holds the untouched blank starter project */
-  if(settings.auto && !skipSave) saveToBrowser(true);
+     editor still holds the untouched blank starter project — and an
+     untouched starter is never saved at all (see hasWorkToSave) */
+  if(settings.auto && !skipSave && hasWorkToSave()) saveToBrowser(true);
   renderHome();
   document.body.classList.add("home-open");
   $("homeView").hidden=false;
@@ -4403,6 +4704,50 @@ function hideHome(){
   document.body.classList.remove("home-open");
   $("homeView").hidden=true;
 }
+/* ============ home screen right-click menu ============
+   The home screen has its OWN context menu — the editor's general
+   menu （戻す / コピー / 書き出し…) makes no sense here. On a project
+   card it offers that project's actions; on the empty space, the
+   home-level actions. Capture phase + stopPropagation keeps the
+   document-level fallback menu out of the home screen entirely. */
+$("homeView").addEventListener("contextmenu",function(e){
+  e.preventDefault(); e.stopPropagation();
+  var card=(e.target && e.target.closest)? e.target.closest(".home-card") : null;
+  var rec=null;
+  if(card && card.dataset.pid){
+    var st=loadStore();
+    for(var i=0;i<st.length;i++) if(st[i].id===card.dataset.pid){ rec=st[i]; break; }
+  }
+  if(rec){
+    showCtx(e.clientX, e.clientY, [
+      {desc:"「"+(rec.name||"プロジェクト")+"」"},
+      {label:"開く", fn:function(){ openStoredProject(rec); }},
+      {sep:true},
+      {label:"複製", fn:function(){ duplicateProject(rec); }},
+      {label:"名前の変更", fn:function(){ renameProject(rec); }},
+      {label:"PCに保存（.dspx）", fn:function(){ downloadStoredProject(rec); }},
+      {label:rec.fav? "ピン留めを外す" : "ピン留め", fn:function(){ toggleFavProject(rec); }},
+      {sep:true},
+      {label:"削除", fn:function(){ requestDeleteProject(rec); }}
+    ]);
+  } else {
+    showCtx(e.clientX, e.clientY, [
+      {desc:"ドット絵スタジオ ・ ホーム"},
+      {label:"新規プロジェクト…", fn:function(){ openNewDialog(); }},
+      {label:"PCから開く（.dspx）…", fn:function(){ $("homeDspxFile").click(); }},
+      {sep:true},
+      {label:"全プロジェクトをバックアップ", fn:function(){ $("homeBackupBtn").click(); }},
+      {label:"バックアップから復元…", fn:function(){ $("homeRestoreBtn").click(); }},
+      {label:"保存の設定…", fn:function(){ openSettings(); }},
+      {sep:true},
+      {label:"つかいかた", fn:function(){ openHow(); }},
+      {label:"拡張機能…", fn:function(){ openExtDialog(); }},
+      {label:"エディタに戻る", fn:function(){ hideHome(); }}
+    ]);
+  }
+}, true);
+/* no native drag (and no leftover drag ghost) ever starts from the grid */
+$("homeGrid").addEventListener("dragstart",function(e){ e.preventDefault(); });
 $("brandMark").addEventListener("click",function(){ showHome(); });
 $("mHome").addEventListener("click",function(){ showHome(); });
 $("mBrowserSave").addEventListener("click",function(){ saveToBrowser(false); });
@@ -4414,7 +4759,7 @@ $("homeSort").addEventListener("change",function(){ homeSortMode=this.value; ren
 $("homeContinueBtn").addEventListener("click",function(){
   var st=loadStore();
   for(var i=0;i<st.length;i++) if(st[i].id===settings.lastId){ openStoredProject(st[i]); return; }
-  toast("つづきのプロジェクトが見つかりませんでした");
+  toast("続きのプロジェクトが見つかりませんでした");
 });
 $("homeBackupBtn").addEventListener("click",function(){
   var st=loadStore();
@@ -4435,11 +4780,16 @@ $("homeRestoreFile").addEventListener("change",function(e){
       arr.forEach(function(rec){
         if(!rec || !rec.id || !rec.data || !rec.data.frames) return;
         for(var i=0;i<st.length;i++) if(st[i].id===rec.id) return;
+        /* thumbnails in records this app writes are always data:
+           URLs; anything else in a restored file is dropped and
+           regenerated from the project data rather than loaded */
+        if(typeof rec.thumb!=="string" || rec.thumb.indexOf("data:image/")!==0) rec.thumb=thumbFromData(rec.data);
+        if(typeof rec.anim!=="string" || rec.anim.indexOf("data:image/")!==0) rec.anim=null;
         st.push(rec); added++;
       });
       writeStore(st);
       renderHome();
-      toast(added? (added+" 件のプロジェクトを復元しました") : "新しいプロジェクトはありませんでした（すべて既にあります）");
+      toast(added? (added+" 件のプロジェクトを復元しました") : "新しいプロジェクトはありませんでした（全て既にあります）");
     }catch(err){ toast("そのバックアップは読み込めませんでした"); }
   };
   r.readAsText(f); e.target.value="";
@@ -4486,6 +4836,117 @@ $("mSettings").addEventListener("click",openSettings);
 $("homeSettingsBtn").addEventListener("click",openSettings);
 $("setCloseBtn").addEventListener("click",closeSettings);
 $("setBackdrop").addEventListener("click",function(e){ if(e.target===this) closeSettings(); });
+
+/* ============ theme （ライト / ダーク) + theme colour ============
+   The choice lives in the same settings record as auto-save, so it
+   survives reloads. "auto" follows the OS (the CSS media query);
+   "light" / "dark" put data-theme on <html>, which wins over the OS.
+   The accent colour only applies while the テーマカラー extension is
+   on (applyExtState re-runs applyTheme when the switch flips). */
+var THEME_LABELS={auto:"自動", light:"ライト", dark:"ダーク"};
+function isDarkTheme(){
+  var t=document.documentElement.getAttribute("data-theme");
+  if(t==="dark") return true;
+  if(t==="light") return false;
+  return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+}
+function applyTheme(){
+  var el=document.documentElement;
+  if(settings.theme==="dark" || settings.theme==="light") el.setAttribute("data-theme", settings.theme);
+  else el.removeAttribute("data-theme");
+  if(extState.themecolor && settings.accent) el.style.setProperty("--accent", settings.accent);
+  else el.style.removeProperty("--accent");
+  syncThemeUI();
+  drawGrid();
+}
+function syncThemeUI(){
+  var label="テーマ："+(THEME_LABELS[settings.theme]||"自動");
+  if($("homeThemeBtn")) $("homeThemeBtn").textContent=label;
+  if($("mTheme")) $("mTheme").textContent=label;
+}
+function cycleTheme(){
+  settings.theme = settings.theme==="auto"? "light" : settings.theme==="light"? "dark" : "auto";
+  saveSettings(); applyTheme();
+  toast("テーマを「"+THEME_LABELS[settings.theme]+"」にしました"+(settings.theme==="auto"? "（端末の設定に合わせます）":""));
+}
+$("homeThemeBtn").addEventListener("click",cycleTheme);
+$("mTheme").addEventListener("click",cycleTheme);
+/* theme colour picker (the dialog itself is only reachable while the
+   テーマカラー extension is on — see applyExtState) */
+var ACCENT_COLORS=[
+  {c:"#ff5a3c", name:"コーラル（初期）"},
+  {c:"#e5484d", name:"あか"},
+  {c:"#d6336c", name:"ピンク"},
+  {c:"#7c4dff", name:"むらさき"},
+  {c:"#3e7bfa", name:"あお"},
+  {c:"#12a594", name:"ティール"},
+  {c:"#2f9e44", name:"みどり"},
+  {c:"#e8590c", name:"オレンジ"}
+];
+function renderAccentGrid(){
+  var g=$("accentGrid"); if(!g) return;
+  g.innerHTML="";
+  ACCENT_COLORS.forEach(function(a){
+    var b=document.createElement("button");
+    b.type="button"; b.className="accent-sw"+(settings.accent===a.c? " is-on":"");
+    b.style.background=a.c;
+    b.setAttribute("aria-label","テーマカラー："+a.name);
+    var s=document.createElement("span"); s.textContent=a.name; b.appendChild(s);
+    b.addEventListener("click",function(){
+      settings.accent=a.c; saveSettings(); applyTheme(); renderAccentGrid();
+      toast("テーマカラーを「"+a.name+"」にしました");
+    });
+    g.appendChild(b);
+  });
+}
+function openAccent(){ renderAccentGrid(); $("accentBackdrop").hidden=false; }
+function closeAccent(){ $("accentBackdrop").hidden=true; }
+$("accentCloseBtn").addEventListener("click",closeAccent);
+$("accentBackdrop").addEventListener("click",function(e){ if(e.target===this) closeAccent(); });
+$("accentResetBtn").addEventListener("click",function(){
+  settings.accent=null; saveSettings(); applyTheme(); renderAccentGrid();
+  toast("テーマカラーを初期の色に戻しました");
+});
+$("homeAccentBtn").addEventListener("click",openAccent);
+$("mAccent").addEventListener("click",openAccent);
+
+/* ============ つかいかた (how-to slides, from the home screen) ===== */
+var HOW_SLIDES=[
+  {t:"1. プロジェクトを作る", x:"ホーム画面の「＋ 新規プロジェクト」を押して、名前・キャンバスの大きさ・最初のフレーム数を決めて「作成する」を押します。プロジェクトは、このボタンを押したときだけ増えます。ホームのカードの「開く」から、いつでも続きを編集できます。"},
+  {t:"2. 描く", x:"左のツール（ペン・消しゴム・塗りつぶし・スポイト・直線・図形など）で中央のキャンバスに描きます。色は右側のパレットから選びます。キャンバスで右クリックすると専用メニューが開き、右ボタンのドラッグは消しゴムになります。タブレットでは1本指（とApple Pencil）が描画、2本指でつまむと拡大・縮小、2本指のまま動かすと移動できます。"},
+  {t:"3. レイヤーとフレーム", x:"レイヤーは「重ねる紙」です。左側のパネルで追加・複製・並べ替えができ、絵を部品ごとに分けて描けます。フレームはアニメのフレームで、下の帯で追加します。再生ボタンで動きを確認でき、レイヤーにもフレームにもエフェクトをかけられます。"},
+  {t:"4. 保存のしかた（2種類）", x:"「ブラウザに保存」は、この端末のブラウザの中に保存する方法で、ホーム画面に並びます。自動保存もONにできます（保存の設定）。「PCに保存（.dspx）」はファイルとしてダウンロードする方法で、別の端末へ渡したりバックアップしたりできます。ホームのカードには、最新版がPCに保存済みかどうかが表示されます。"},
+  {t:"5. 書き出し", x:"完成したら「書き出し」から PNG（今のフレーム）・スプライトシート・GIF（アニメ）・ZIP（フレーム一式）で書き出せます。拡大率や背景、シートの列・行も選べて、プレビューで確認しながら書き出せます。"},
+  {t:"6. 拡張機能とテーマ", x:"ホーム画面の右上「拡張機能」から、必要な機能だけをONにできます（キャラクター読み込み、パレット集、SVG書き出し、文字スタンプ、テーマカラーなど）。画面の明るさは「テーマ」ボタンでライト／ダークを切り替えられ、テーマカラー拡張をONにするとアクセントカラーも変えられます。"}
+];
+var howIdx=0;
+function renderHow(){
+  document.querySelectorAll("#howStage .how-slide").forEach(function(s,i){ s.hidden=i!==howIdx; });
+  $("howTitle").textContent=HOW_SLIDES[howIdx].t;
+  $("howText").textContent=HOW_SLIDES[howIdx].x;
+  $("howCount").textContent=(howIdx+1)+" / "+HOW_SLIDES.length;
+  $("howPrevBtn").disabled=howIdx===0;
+  $("howNextBtn").disabled=howIdx===HOW_SLIDES.length-1;
+  var dots=$("howDots"); dots.innerHTML="";
+  HOW_SLIDES.forEach(function(_,i){
+    var d=document.createElement("button");
+    d.type="button"; d.className="how-dot"+(i===howIdx? " is-on":"");
+    d.setAttribute("aria-label",(i+1)+"枚目のスライドへ");
+    d.addEventListener("click",function(){ howIdx=i; renderHow(); });
+    dots.appendChild(d);
+  });
+}
+function openHow(){ howIdx=0; renderHow(); $("howBackdrop").hidden=false; }
+function closeHow(){ $("howBackdrop").hidden=true; }
+$("homeHowBtn").addEventListener("click",openHow);
+$("howCloseBtn").addEventListener("click",closeHow);
+$("howBackdrop").addEventListener("click",function(e){ if(e.target===this) closeHow(); });
+$("howPrevBtn").addEventListener("click",function(){ if(howIdx>0){ howIdx--; renderHow(); } });
+$("howNextBtn").addEventListener("click",function(){ if(howIdx<HOW_SLIDES.length-1){ howIdx++; renderHow(); } });
+$("howBackdrop").addEventListener("keydown",function(e){
+  if(e.key==="ArrowLeft" && howIdx>0){ howIdx--; renderHow(); }
+  if(e.key==="ArrowRight" && howIdx<HOW_SLIDES.length-1){ howIdx++; renderHow(); }
+});
 restartAutosave();
 updateSaveStatus();
 /* export dialog */
@@ -4542,7 +5003,7 @@ function setViewMode(v){
   if(!manualZoom) fitZoom(); else setZoom(stagePx,true);
   if(v==="sheet"){
     var L=sheetLayout();
-    toast("スプライトシートモード： "+L.cols+" 列 × "+L.rows+" 行で表示します（コマをクリックするとそのフレームを編集できます）");
+    toast("スプライトシートモード： "+L.cols+" 列 × "+L.rows+" 行で表示します（フレームをクリックするとそのフレームを編集できます）");
   } else {
     toast("通常モードに戻しました");
   }
@@ -4689,11 +5150,11 @@ $("jsonFile").addEventListener("change",function(e){
         });
       }
       $("fpsRange").value=fps; $("fpsNum").value=fps; $("fpsLabel").textContent=fps;
-      curProjId=null; projPcSaved=true; /* it came from a file on the PC */
+      curProjId=null; projPcSaved=true; projLive=true; /* it came from a file on the PC */
       projRev=0; pcSavedRev=0; pcSavedAt=null; browserSavedRev=-1; lastBrowserAt=null;
       updateSaveStatus();
       hideHome();
-      syncCanvasSize(false); toast("プロジェクトをひらきました");
+      syncCanvasSize(false); toast("プロジェクトを開きました");
     }catch(err){ toast("そのファイルは読み込めませんでした"); }
   };
   r.readAsText(f); e.target.value="";
@@ -5066,13 +5527,13 @@ function updateImpNotes(){
   var o=impSheetOpts();
   var extra=(impExtraFiles.length? " ・ ほか "+impExtraFiles.length+" 件の画像もフレームとして追加されます" : "");
   var gif=(impGifFrames? " ・ アニメーションGIF（"+impGifFrames.length+" フレームに分解します）" : "");
-  $("impInfo").textContent="画像： "+sd.w+" × "+sd.h+" px ・ キャンバス（1コマ）： "+W+" × "+H+(viewMode==="sheet"? " ・ 現在スプライトシートモードです":"")+gif+extra;
+  $("impInfo").textContent="画像： "+sd.w+" × "+sd.h+" px ・ キャンバス（1フレーム）： "+W+" × "+H+(viewMode==="sheet"? " ・ 現在スプライトシートモードです":"")+gif+extra;
   if(sheet){
     $("impModeNote").textContent="フレームが "+(o.cols*o.rows)+" 枚に置き換わり、キャンバスはスプライトシートモードで表示されます";
-    $("impSheetNote").textContent="画像全体を "+(o.cw*o.cols)+" × "+(o.ch*o.rows)+" px に合わせてから、1枚 "+o.cw+" × "+o.ch+" で "+o.cols+" 列（コラム） × "+o.rows+" 行（ロウ）に分割します";
+    $("impSheetNote").textContent="画像全体を "+(o.cw*o.cols)+" × "+(o.ch*o.rows)+" px に合わせてから、1枚 "+o.cw+" × "+o.ch+" で "+o.cols+" 列 × "+o.rows+" 行に分割します";
   } else {
     $("impFitNote").textContent=(impGifFrames || impDest==="project")
-      ? "取り込む大きさは下の「ドット化の粒度」で決まります"
+      ? "読み込む大きさは下の「ドット化の粒度」で決まります"
       : (impFit==="image"
         ? "キャンバスサイズを画像の大きさ（"+sd.w+" × "+sd.h+"）に変更します"
         : "画像を今のキャンバス（"+W+" × "+H+"）に合わせて拡大・縮小します");
@@ -5189,7 +5650,7 @@ function applyImportResult(r, dest){
     W=r.w; H=r.h;
     frames=[frameFromCells(r)]; frameGroups=[]; selFGroupId=null; curFrame=0; sel=null;
     viewMode="normal"; setSeg("viewModeSeg","m","normal");
-    curProjId=null; projPcSaved=false;
+    curProjId=null; projPcSaved=false; projLive=true;
     pcSavedRev=-1; pcSavedAt=null; browserSavedRev=-1; lastBrowserAt=null;
     syncCanvasSize(true);
     if(!manualZoom) fitZoom();
@@ -5238,7 +5699,7 @@ function importSheetResult(r){
   viewMode="sheet"; setSeg("viewModeSeg","m","sheet");
   syncCanvasSize(false);
   if(!manualZoom) fitZoom();
-  toast("スプライトシートとして取り込みました（"+cols+" 列 × "+rows+" 行 ＝ "+frames.length+" フレーム）");
+  toast("スプライトシートとして読み込みました（"+cols+" 列 × "+rows+" 行 ＝ "+frames.length+" フレーム）");
 }
 $("impGoBtn").addEventListener("click",function(){
   if(!impImg) return;
@@ -5260,7 +5721,7 @@ $("impGoBtn").addEventListener("click",function(){
       frames=results.map(frameFromCells);
       frameGroups=[]; selFGroupId=null; curFrame=0; sel=null;
       viewMode="normal"; setSeg("viewModeSeg","m","normal");
-      curProjId=null; projPcSaved=false;
+      curProjId=null; projPcSaved=false; projLive=true;
       pcSavedRev=-1; pcSavedAt=null; browserSavedRev=-1; lastBrowserAt=null;
       syncCanvasSize(true);
     } else {
@@ -5270,7 +5731,7 @@ $("impGoBtn").addEventListener("click",function(){
     }
     if(!manualZoom) fitZoom();
     renderAll(); updateSaveStatus();
-    toast("GIFを "+results.length+" フレームに分解して取り込みました");
+    toast("GIFを "+results.length+" フレームに分解して読み込みました");
   } else if(mode==="sheet"){
     importSheetResult(first);
   } else {
@@ -5281,7 +5742,7 @@ $("impGoBtn").addEventListener("click",function(){
       syncCanvasSize(false);
     }
     applyImportResult(first, dest);
-    toast("画像を取り込みました");
+    toast("画像を読み込みました");
   }
   /* extra files ride along as additional frames, same settings */
   var added=0;
@@ -5418,14 +5879,14 @@ if(window.matchMedia){ window.matchMedia("(prefers-color-scheme: dark)").addEven
    UI exists in the page from the start but stays hidden until its
    switch is on. */
 var EXT_KEY="dot-studio.extensions.v1";
-var extState={hfp:false, palettes:false, svgexport:false, textstamp:false};
+var extState={hfp:false, palettes:false, svgexport:false, textstamp:false, themecolor:false};
 try{ var exs=JSON.parse(localStorage.getItem(EXT_KEY)||"null"); if(exs && typeof exs==="object") extState=Object.assign(extState, exs); }catch(e){}
 function saveExtState(){ try{ localStorage.setItem(EXT_KEY, JSON.stringify(extState)); }catch(e){} }
 var EXT_DEFS=[
   { id:"hfp",
     name:"HackforPlay キャラクター",
     meta:"キャラクター全331種 ・ 画像は skins.hackforplay.xyz から読み込みます",
-    desc:"HackforPlayのキャラクターをドット絵として使えるようになります。有効にすると、新規プロジェクト作成の画面と、メニューバーの「ファイル」に「HackforPlayのキャラを使う」ボタンが現れます。名前（日本語・英語どちらでも）で検索して選ぶと、歩行シートなどのスプライトシートは列×行でフレームに分割して取り込まれます。" },
+    desc:"HackforPlayのキャラクターをドット絵として使えるようになります。有効にすると、新規プロジェクト作成の画面と、メニューバーの「ファイル」に「HackforPlayのキャラを使う」ボタンが現れます。名前（日本語・英語どちらでも）で検索して選ぶと、歩行シートなどのスプライトシートは列×行でフレームに分割して読み込まれます。" },
   { id:"palettes",
     name:"パレット集",
     meta:"有名パレットを読み込み ・ PICO-8 / Sweetie-16 / Resurrect 64 / SLSO8 / ゲームボーイ / C64",
@@ -5437,7 +5898,11 @@ var EXT_DEFS=[
   { id:"textstamp",
     name:"文字スタンプ",
     meta:"ツールに「文字」を追加 ・ Pixel M Plus 12",
-    desc:"有効にすると、ツールに「文字」が増えます。入力した文字列を Pixel M Plus 12 フォントで描いてドットとして読み取り、今の色でキャンバスに置けます。大きさはフォントの実寸（12px）の等倍〜3倍です。" }
+    desc:"有効にすると、ツールに「文字」が増えます。入力した文字列を Pixel M Plus 12 フォントで描いてドットとして読み取り、今の色でキャンバスに置けます。大きさはフォントの実寸（12px）の等倍〜3倍です。" },
+  { id:"themecolor",
+    name:"テーマカラー",
+    meta:"アクセントカラーを変更 ・ 8色から選択",
+    desc:"有効にすると、ホーム画面と「表示」メニューに「テーマカラー」ボタンが現れ、アプリのアクセントカラーを8色から選べるようになります。色の選択は保存され、次回も維持されます。無効にすると初期の色に戻ります（ライト／ダークの切り替え自体は拡張機能なしで使えます）。" }
 ];
 function renderExtList(){
   var box=$("extList"); if(!box) return;
@@ -5505,6 +5970,11 @@ function applyExtState(){
   /* text stamp */
   $("toolTextBtn").hidden=!extState.textstamp;
   if(!extState.textstamp && tool==="text") setTool("pen");
+  /* theme colour: its buttons appear only while the extension is on,
+     and applyTheme drops the accent override when it is off */
+  $("homeAccentBtn").hidden=!extState.themecolor;
+  $("mAccent").hidden=!extState.themecolor;
+  applyTheme();
   buildToolHelp();
 }
 
@@ -5679,8 +6149,8 @@ function loadHfpCatalog(){
 function openHfpPicker(ctx){
   hfpCtx=ctx; hfpSel=-1;
   $("hfpCtxNote").textContent = ctx==="new"
-    ? "選んだキャラクターで新しいプロジェクトが始まります。複数コマの画像はフレームに分割され、キャンバスは1コマの大きさになります。"
-    : "選んだキャラクターは「画像の取り込み」画面で開かれます。複数コマの画像はスプライトシートとして列×行に分割して取り込めます。";
+    ? "選んだキャラクターで新しいプロジェクトが始まります。複数のフレームを持つ画像はフレームに分割され、キャンバスは1フレームの大きさになります。"
+    : "選んだキャラクターは「画像の読み込み」画面で開かれます。複数のフレームを持つ画像はスプライトシートとして列×行に分割して読み込めます。";
   $("hfpSearch").value="";
   $("hfpGrid").innerHTML="";
   $("hfpCount").textContent="キャラクター一覧を読み込んでいます…";
@@ -5748,7 +6218,7 @@ function renderHfpGrid(q){
     th.appendChild(tim);
     var nm=document.createElement("div"); nm.className="hfp-name"; nm.textContent=it[6];
     var sub=document.createElement("div"); sub.className="hfp-sub";
-    sub.textContent=it[7]+" ・ "+it[3]+"×"+it[4]+(it[1]*it[2]>1? " ・ "+(it[1]*it[2])+"コマ":"");
+    sub.textContent=it[7]+" ・ "+it[3]+"×"+it[4]+(it[1]*it[2]>1? " ・ "+(it[1]*it[2])+"フレーム":"");
     card.appendChild(th); card.appendChild(nm); card.appendChild(sub);
     if(it[5]){ var bd=document.createElement("span"); bd.className="hfp-paid"; bd.textContent="有料"; card.appendChild(bd); }
     card.addEventListener("click",function(){ selectHfp(i); });
@@ -5777,9 +6247,9 @@ function selectHfp(i){
   var t1=document.createElement("div"); t1.className="hfp-info-name"; t1.textContent=it[6];
   var t2=document.createElement("div"); t2.className="hfp-info-sub"; t2.textContent=it[7];
   var t3=document.createElement("div"); t3.className="hfp-info-sub";
-  t3.textContent="1コマ "+it[3]+" × "+it[4]+" px ・ "+it[1]+" 列 × "+it[2]+" 行（"+framesN+" フレーム）"+(it[5]? " ・ 有料キャラクター":"");
+  t3.textContent="1フレーム "+it[3]+" × "+it[4]+" px ・ "+it[1]+" 列 × "+it[2]+" 行（"+framesN+" フレーム）"+(it[5]? " ・ 有料キャラクター":"");
   var t4=document.createElement("div"); t4.className="hfp-info-sub";
-  t4.textContent= framesN>1? "スプライトシートとして "+framesN+" フレームに分割されます" : "1枚の画像として取り込まれます";
+  t4.textContent= framesN>1? "スプライトシートとして "+framesN+" フレームに分割されます" : "1枚の画像として読み込まれます";
   info.appendChild(t1); info.appendChild(t2); info.appendChild(t3); info.appendChild(t4);
   $("hfpUseBtn").disabled=false;
 }
@@ -5846,7 +6316,7 @@ function hfpStartProject(it, url){
       setSeg("viewModeSeg","m",viewMode);
       bgMode=0; wrap.style.background=""; wrap.style.backgroundSize=""; $("bgBtn").textContent="背景：市松";
       projName=it[6]; $("projName").value=it[6];
-      curProjId=null; projPcSaved=false;
+      curProjId=null; projPcSaved=false; projLive=true;
       projRev=0; pcSavedRev=-1; pcSavedAt=null; browserSavedRev=-1; lastBrowserAt=null;
       manualZoom=false; panX=0; panY=0;
       syncCanvasSize(true);
