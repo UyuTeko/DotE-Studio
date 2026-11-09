@@ -2164,15 +2164,33 @@ function applyWrapSize(){
   var ws=wrapSize();
   wrap.style.width=ws.w+"px"; wrap.style.height=ws.h+"px";
 }
+/* The canvas area's rect, cached: layoutWrap / clampPan run on
+   every zoom and pan frame, and reading getBoundingClientRect
+   right after writing the wrap's size/position forces a
+   synchronous layout of the whole page — on iPads that was the
+   visible hitch the moment a zoom started. The rect only changes
+   when the layout around the stage changes, which the
+   ResizeObserver (plus window resize / scroll as belt and braces)
+   reports; between those, the cached copy is exact, and the zoom
+   path becomes write-only. */
+var areaRectCache=null;
+function areaRect(){
+  if(!areaRectCache) areaRectCache=area.getBoundingClientRect();
+  return areaRectCache;
+}
+function dropAreaRect(){ areaRectCache=null; }
+if(window.ResizeObserver){ try{ new ResizeObserver(dropAreaRect).observe(area); }catch(_){} }
+window.addEventListener("resize",dropAreaRect);
+window.addEventListener("scroll",dropAreaRect,true);
 function layoutWrap(){
-  var r=area.getBoundingClientRect();
+  var r=areaRect();
   if(!r.width) return;
   var ws=wrapSize();
   wrap.style.left=((r.width-ws.w)/2+panX)+"px";
   wrap.style.top=((r.height-ws.h)/2+panY)+"px";
 }
 function clampPan(){
-  var r=area.getBoundingClientRect(); if(!r.width) return;
+  var r=areaRect(); if(!r.width) return;
   var ws=wrapSize();
   var mx=r.width/2+ws.w/2-30, my=r.height/2+ws.h/2-30;
   panX=Math.max(-mx,Math.min(mx,panX));
@@ -2180,7 +2198,7 @@ function clampPan(){
 }
 /* Zoom so the canvas point under (clientX, clientY) stays under the cursor. */
 function zoomAt(cx,cy,size){
-  var ar=area.getBoundingClientRect(); if(!ar.width) return;
+  var ar=areaRect(); if(!ar.width) return;
   var wr=wrap.getBoundingClientRect();
   var fx=(cx-wr.left)/Math.max(1,wr.width), fy=(cy-wr.top)/Math.max(1,wr.height);
   setZoom(size,true);
@@ -2206,7 +2224,7 @@ function setZoom(px,manual){
 }
 function fitZoom(){
   manualZoom=false; panX=0; panY=0;
-  var r=area.getBoundingClientRect();
+  var r=areaRect();
   var vd=viewDims(), m=Math.max(vd.w,vd.h);
   var s=Math.max(120, Math.min((r.width-18)*m/vd.w, (r.height-18)*m/vd.h));
   setZoom(s,false);
@@ -2225,6 +2243,11 @@ var hiResQueued=false;
    capped at 2x, which cuts overlay redraw cost by over half on
    high-DPR tablets while the lines stay crisp. */
 function effDpr(){ return Math.min(window.devicePixelRatio||1, 2); }
+/* The DPR the overlay canvases were actually sized with:
+   sizeHiRes lowers it past the cap below, and drawGrid / drawSel
+   must draw with the same transform or their lines would land at
+   the wrong scale. */
+var overlayDpr=0;
 function sizeHiRes(){
   if(hiResQueued) return;
   hiResQueued=true;
@@ -2233,6 +2256,16 @@ function sizeHiRes(){
     var w=wrap.clientWidth, h=wrap.clientHeight;
     if(!w||!h) return;
     var dpr=effDpr();
+    /* at extreme zooms the wrap itself is thousands of px across;
+       sizing the overlays at full DPR then allocates tens of
+       millions of pixels on every zoom frame — a hard hitch, and
+       past the browser's canvas-size limit a silent failure. The
+       picture canvas is not sized by this path and stays exact;
+       only the hairline grid / selection overlays soften slightly
+       at those zooms. */
+    if(w*dpr>8192) dpr=8192/w;
+    if(h*dpr>8192) dpr=Math.min(dpr, 8192/h);
+    overlayDpr=dpr;
     [gridC,selC].forEach(function(c){
       var nw=Math.round(w*dpr), nh=Math.round(h*dpr);
       if(c.width!==nw) c.width=nw;
@@ -2243,7 +2276,7 @@ function sizeHiRes(){
 }
 function drawGrid(){
   var w=wrap.clientWidth, h=wrap.clientHeight; if(!w) return;
-  var dpr=effDpr();
+  var dpr=overlayDpr||effDpr();
   gctx.setTransform(dpr,0,0,dpr,0,0);
   gctx.clearRect(0,0,w,h);
   if(!showGrid) return;
@@ -2302,7 +2335,7 @@ function drawGrid(){
 }
 function drawSel(){
   var w=wrap.clientWidth, h=wrap.clientHeight; if(!w) return;
-  var dpr=effDpr();
+  var dpr=overlayDpr||effDpr();
   sctx.setTransform(dpr,0,0,dpr,0,0);
   sctx.clearRect(0,0,w,h);
   var label = sel ? ((sel.x1-sel.x0+1)+" × "+(sel.y1-sel.y0+1)) : "なし";
@@ -3762,9 +3795,58 @@ var tapTrack=null;
    only while the pointer stays within a few px of where it landed. */
 var lpTimer=null, lpPointerId=null, lpDone=false;
 function isPalmEvent(e){
-  /* PointerEvent.width/height are the contact patch in CSS px: a
-     fingertip reads roughly 8–40, a resting palm far more */
-  return (e.width!=null && e.width>52) || (e.height!=null && e.height>52);
+  /* PointerEvent.width/height are the contact patch in CSS px.
+     What a fingertip reads varies far more by device than the old
+     test assumed: on iPads a finger laid flat for a pinch commonly
+     reports 60–100px on its LONG axis, so the old "either axis
+     over 52 = palm" test classified real pinch fingers as palms
+     and the gesture never formed (pinch dead on iPad, fine on
+     phones, whose drivers report smaller patches). A finger is
+     always thin on its SHORT axis, while a resting palm heel is
+     big on BOTH axes at once — so a palm must now be big on both,
+     and even a misclassified pair is rescued the moment it
+     actually pinches (see maybePromotePalms). */
+  if(e.width==null || e.height==null) return false;
+  var mn=Math.min(e.width, e.height), mx=Math.max(e.width, e.height);
+  return (mn>72 && mx>110) || mx>175;
+}
+/* Palm-classified touches that are still down, with positions:
+   parked (they neither draw nor join the gesture) unless they
+   turn out to be pinch fingers after all. */
+var palmPts=new Map();   /* pointerId -> {x, y} */
+var palmBaseD=0;         /* distance between the first two parked touches when the second landed */
+function parkPalm(e){
+  palmIds.add(e.pointerId);
+  palmPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
+  if(palmPts.size===2){
+    var pp=[]; palmPts.forEach(function(p){ pp.push(p); });
+    palmBaseD=Math.hypot(pp[0].x-pp[1].x, pp[0].y-pp[1].y);
+  }
+}
+function unparkPalm(id){
+  palmIds.delete(id);
+  palmPts.delete(id);
+  if(palmPts.size<2) palmBaseD=0;
+}
+/* Pinch rescue: two parked touches whose mutual distance actually
+   changes are two flat fingers pinching, whatever their contact
+   size said — promote them into the gesture. A resting palm does
+   not change its distance to another resting palm, and a parked
+   touch next to a DRAWING finger is never promoted (the promotion
+   requires no tracked finger down), so ordinary palm rejection
+   while drawing is unaffected. */
+function maybePromotePalms(){
+  if(touchPts.size>0 || palmPts.size<2 || !palmBaseD) return;
+  var ids=[], pp=[];
+  palmPts.forEach(function(p,id){ if(pp.length<2){ ids.push(id); pp.push(p); } });
+  if(pp.length<2) return;
+  var d=Math.hypot(pp[0].x-pp[1].x, pp[0].y-pp[1].y);
+  if(Math.abs(d/palmBaseD-1)<0.12) return;
+  for(var i=0;i<2;i++){ palmIds.delete(ids[i]); palmPts.delete(ids[i]); touchPts.set(ids[i], pp[i]); }
+  palmBaseD=0;
+  if(!tapTrack) tapTrack={max:2, t0:Date.now(), moved:true, mx:null, my:null};
+  else { tapTrack.max=Math.max(tapTrack.max,2); tapTrack.moved=true; }
+  startGesture();
 }
 function noteTouchStrokeStart(){
   touchStrokeRec={
@@ -3871,7 +3953,7 @@ function applyGesture(){
   if(Math.abs(gf-1)>0.0004) setZoom(stagePx*gf, true);
   /* glue: the anchored canvas fraction lands exactly on the
      fingers' current midpoint — zoom and pan in a single step */
-  var ar=area.getBoundingClientRect(); if(!ar.width) return;
+  var ar=areaRect(); if(!ar.width) return;
   var ws=wrapSize();
   panX=(gm.x-touchGesture.fx*ws.w)-ar.left-(ar.width-ws.w)/2;
   panY=(gm.y-touchGesture.fy*ws.h)-ar.top-(ar.height-ws.h)/2;
@@ -3973,7 +4055,7 @@ window.addEventListener("blur",function(){
   /* touch bookkeeping must not survive a focus loss either: a
      gesture interrupted here would otherwise leave the drawing
      lockout on forever */
-  touchPts.clear(); palmIds.clear(); touchGesture=null; touchLockout=false; tapTrack=null; touchStrokeRec=null; clearLongPress(); lpDone=false;
+  touchPts.clear(); palmIds.clear(); palmPts.clear(); palmBaseD=0; touchGesture=null; touchLockout=false; tapTrack=null; touchStrokeRec=null; clearLongPress(); lpDone=false;
   if(!strokeInProgress() && !panDrag) return;
   drawing=false; panDrag=null; pendingRight=null;
   selMode=null; selStart=null; moveMode=null; moveBase=null; moveData=null;
@@ -4033,8 +4115,12 @@ wrap.addEventListener("pointerdown",function(e){
   if(e.pointerType==="touch"){
     /* palm rejection: a contact patch far bigger than a fingertip
        is the heel of the hand resting on the glass — it is not a
-       drawing finger and must not join the gesture pair either */
-    if(isPalmEvent(e)){ palmIds.add(e.pointerId); e.preventDefault(); return; }
+       drawing finger and must not join the gesture pair either.
+       Only a FIRST contact is ever checked: a touch that lands
+       while another finger is already down is a pinch partner,
+       never a palm (checking it anyway was the other half of the
+       iPad dead-pinch bug) */
+    if(touchPts.size===0 && isPalmEvent(e)){ parkPalm(e); e.preventDefault(); return; }
     var firstFinger = touchPts.size===0;
     touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
     if(firstFinger) tapTrack={max:1, t0:Date.now(), moved:false, mx:null, my:null};
@@ -4230,6 +4316,14 @@ wrap.addEventListener("pointerdown",function(e){
   addRecent(c); render();
 });
 wrap.addEventListener("pointermove",function(e){
+  /* a parked (palm-classified) touch only updates its position —
+     it may still turn out to be a pinch finger (maybePromotePalms)
+     — and never feeds the drawing paths below */
+  if(e.pointerType==="touch" && palmPts.has(e.pointerId)){
+    palmPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
+    maybePromotePalms();
+    return;
+  }
   if(e.pointerType==="touch" && touchPts.has(e.pointerId)){
     touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
     if(touchGesture){ e.preventDefault(); queueGesture(); return; }
@@ -4366,7 +4460,8 @@ function showCanvasCtx(cx, cy, x, y){
 function endStroke(e){
   if(e && lpPointerId!=null && e.pointerId===lpPointerId){ lpDone=false; lpPointerId=null; lpArm=null; clearLongPress(); }
   if(e && e.pointerType==="touch"){
-    var wasPalmEnd=palmIds.delete(e.pointerId);
+    var wasPalmEnd=palmIds.has(e.pointerId);
+    unparkPalm(e.pointerId);
     touchPts.delete(e.pointerId);
     if(touchPts.size===0) onAllTouchesUp();
     if(wasPalmEnd) return;
@@ -4562,7 +4657,7 @@ area.addEventListener("pointercancel",areaPanEnd);
    gesture), and a lone off-canvas finger simply does nothing. */
 area.addEventListener("pointerdown",function(e){
   if(e.pointerType!=="touch" || wrap.contains(e.target)) return;
-  if(isPalmEvent(e)){ palmIds.add(e.pointerId); e.preventDefault(); return; }
+  if(touchPts.size===0 && isPalmEvent(e)){ parkPalm(e); e.preventDefault(); return; }
   var firstOff = touchPts.size===0;
   touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
   if(firstOff) tapTrack={max:1, t0:Date.now(), moved:false, mx:null, my:null};
@@ -4574,13 +4669,19 @@ area.addEventListener("pointerdown",function(e){
   }
 });
 area.addEventListener("pointermove",function(e){
-  if(e.pointerType!=="touch" || wrap.contains(e.target)) return;
+  if(e.pointerType!=="touch") return;
+  if(palmPts.has(e.pointerId)){
+    palmPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
+    maybePromotePalms();
+    return;
+  }
+  if(wrap.contains(e.target)) return;
   if(touchPts.has(e.pointerId)) touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
   if(touchGesture && touchPts.size>=2) queueGesture();
 });
 function areaTouchEnd(e){
   if(e.pointerType!=="touch") return;
-  palmIds.delete(e.pointerId);
+  unparkPalm(e.pointerId);
   if(touchPts.delete(e.pointerId)){
     if(touchPts.size===0) onAllTouchesUp();
     else gesturePointerGone();
