@@ -98,6 +98,7 @@ label{font-size:11px;color:var(--ink2);display:block;margin-bottom:3px}
   display:none;flex-direction:column;padding:5px;
 }
 .menu.open .menu-panel{display:flex}
+.menu-panel.flip{left:auto;right:0}
 .menu-panel button{
   background:none;border:0;text-align:left;padding:6px 9px;font-size:13px;display:flex;justify-content:space-between;gap:14px;
 }
@@ -222,11 +223,12 @@ label{font-size:11px;color:var(--ink2);display:block;margin-bottom:3px}
 .replace-swatch{width:30px;height:30px;flex:none;border:2px solid var(--line);box-shadow:var(--shadow-sm)}
 .replace-arrow{font-size:16px;flex:none;padding-bottom:5px}
 .toast{
-  position:fixed;left:50%;bottom:22px;transform:translate(-50%,80px);z-index:90;
+  position:fixed;left:50%;bottom:22px;transform:translate(-50%,calc(100% + 30px));z-index:90;
   background:var(--ink);color:var(--bg);border:2px solid var(--line);box-shadow:var(--shadow);
-  padding:9px 16px;font-size:14px;transition:transform .18s ease;max-width:88vw;text-align:center;
+  padding:9px 16px;font-size:14px;max-width:88vw;text-align:center;
+  visibility:hidden;pointer-events:none;transition:transform .18s ease,visibility 0s linear .18s;
 }
-.toast.show{transform:translate(-50%,0)}
+.toast.show{transform:translate(-50%,0);visibility:visible;pointer-events:auto;transition:transform .18s ease}
 
 /* project name (top-left of the menu bar) */
 .proj-name{
@@ -372,7 +374,13 @@ textarea.uri-out{width:100%;background:var(--panel);border:2px solid var(--line)
   .center-col{order:1;min-height:62dvh}
   .tool-grid{grid-template-columns:repeat(5,1fr)}
   .proj-name{font-size:14px;width:110px}
-  .menus .menu:nth-child(n+6){display:none}
+  /* every menu stays reachable at phone widths (表示 → 画面 is the
+     only way back out of the mobile layout): the row wraps instead
+     of hiding ウィンドウ / ヘルプ, labels never wrap mid-word, and
+     panels stay inside the screen and scroll when tall */
+  .menus{flex-wrap:wrap}
+  .menu-btn{white-space:nowrap}
+  .menu-panel{max-width:calc(100vw - 16px);max-height:calc(100dvh - 80px);overflow-y:auto}
 }
 /* themed scrollbars: the gutter is always reserved so an area keeps the
    same width whether or not its scrollbar is currently shown */
@@ -687,15 +695,30 @@ body.home-open #mobileBar{display:none}
 
 /* compact top bar: brand name, size group, undo group and the save
    status step aside (undo/redo live in the bottom bar; canvas size
-   is under ファイル → キャンバスサイズ; export under 書き出し) */
+   is under ファイル → キャンバスサイズ; export under 書き出し).
+   The menus wrap onto two rows INSIDE the bar: the bar used to be a
+   single horizontally scrolling strip (overflow-x:auto), which cut
+   the right-hand menus off-screen AND clipped every dropdown panel
+   into the strip (an overflow box clips absolutely-positioned
+   descendants), leaving the menus — including 表示 → 画面, the only
+   way back to the PC layout — impossible to tap. */
 body.layout-mobile{height:100dvh;overflow:hidden}
-body.layout-mobile .topbar{flex-wrap:nowrap;overflow-x:auto;padding:4px 6px;gap:6px;scrollbar-width:none}
-body.layout-mobile .topbar::-webkit-scrollbar{display:none}
+body.layout-mobile .topbar{flex-wrap:wrap;overflow:visible;padding:4px 6px;gap:2px 4px}
 body.layout-mobile .brand-txt{display:none}
 body.layout-mobile .topbar .top-group{display:none}
+body.layout-mobile .topbar .spacer{display:none}
 body.layout-mobile .save-status{display:none}
-body.layout-mobile .menus{flex-wrap:nowrap;flex:none}
+body.layout-mobile .menus{flex-wrap:wrap;flex:1 1 auto;min-width:0}
 body.layout-mobile .menus .menu{display:block}
+body.layout-mobile .menu-btn{white-space:nowrap;padding:6px 8px}
+body.layout-mobile .menu-panel{max-height:calc(100dvh - 110px);overflow-y:auto}
+
+/* toasts float ABOVE the bottom bar (never covering 戻す / カラー /
+   レイヤー) and slide down by their full height + the bottom offset
+   when they leave, so a wrapped multi-line toast never leaves a
+   sliver behind at the bottom of the screen */
+body.layout-mobile .toast{bottom:calc(78px + env(safe-area-inset-bottom));transform:translate(-50%,calc(100% + 86px + env(safe-area-inset-bottom)))}
+body.layout-mobile .toast.show{transform:translate(-50%,0)}
 
 /* stage: rail + canvas in one row, canvas maximised */
 body.layout-mobile .workspace{display:flex;flex-direction:row;padding:0;gap:0}
@@ -723,26 +746,34 @@ body.layout-mobile #brushSeg button{border-right:0;border-bottom:2px solid var(-
 body.layout-mobile #brushSeg button:last-child{border-bottom:0}
 
 /* tool-option panels (図形・選択範囲・拡大縮小・文字・マップチップ・
-   色置き換え・ミラー) float over the canvas next to the rail */
-body.layout-mobile .side .panel:not(#panelTools):not(#panelLayers){
-  position:fixed;left:72px;top:52px;width:min(302px,84vw);z-index:64;
-  max-height:calc(100dvh - 140px);overflow-y:auto;
+   色置き換え・ミラー) float over the canvas next to the rail.
+   Scoped to the LEFT column only: the right column (.side-right)
+   carries .side too, and this rule used to catch プレビュー /
+   カラー / 使用色一覧 as well — all three were fixed to the same
+   spot and stacked, with 使用色一覧 (last in the DOM) painted over
+   the カラー panel. */
+body.layout-mobile .side:not(.side-right) .panel:not(#panelTools):not(#panelLayers){
+  position:fixed;left:72px;top:88px;width:min(302px,84vw);z-index:64;
+  max-height:calc(100dvh - 190px);overflow-y:auto;
 }
 
 /* layers float as a sheet from the bottom-right (bottom-bar switch) */
 body.layout-mobile #panelLayers{display:none}
 body.layout-mobile.mobile-layers-open #panelLayers{
-  display:block;position:fixed;right:8px;bottom:76px;width:min(324px,88vw);z-index:66;
+  display:block;position:fixed;right:8px;bottom:calc(76px + env(safe-area-inset-bottom));width:min(324px,88vw);z-index:66;
   max-height:calc(100dvh - 160px);overflow-y:auto;
 }
 body.layout-mobile #panelLayers .layer-list{max-height:36dvh}
 
-/* colour / preview / used colours float as one sheet from the top-right */
+/* colour / preview / used colours float as one sheet from the
+   top-right; the カラー panel leads the sheet (it is what the
+   bottom-bar カラー button promises), the rest follows below */
 body.layout-mobile .side-right{display:none}
 body.layout-mobile.mobile-color-open .side-right{
-  display:flex;position:fixed;right:8px;top:52px;width:min(324px,88vw);z-index:66;
-  max-height:calc(100dvh - 140px);overflow-y:auto;padding:2px;gap:8px;background:transparent;
+  display:flex;position:fixed;right:8px;top:88px;width:min(324px,88vw);z-index:66;
+  max-height:calc(100dvh - 190px);overflow-y:auto;padding:2px;gap:8px;background:transparent;
 }
+body.layout-mobile .side-right #panelColor{order:-1}
 body.layout-mobile .side-right .used-panel{flex:none}
 body.layout-mobile .side-right .used-list{max-height:170px;flex:none}
 </style>
@@ -2034,7 +2065,18 @@ document.querySelectorAll(".menu-btn").forEach(function(b){
     e.stopPropagation();
     var m=$(b.dataset.menu), was=m.classList.contains("open");
     document.querySelectorAll(".menu").forEach(function(x){x.classList.remove("open")});
-    if(!was) m.classList.add("open");
+    if(!was){
+      m.classList.add("open");
+      /* a panel anchored to its button's left edge can run off the
+         right side of a narrow screen (the 表示 panel did exactly
+         that, taking the 画面 layout switch with it): flip it to
+         the button's right edge when it would overflow */
+      var p=m.querySelector(".menu-panel");
+      if(p){
+        p.classList.remove("flip");
+        if(p.getBoundingClientRect().right>window.innerWidth-6) p.classList.add("flip");
+      }
+    }
   });
 });
 document.addEventListener("click",function(){ document.querySelectorAll(".menu").forEach(function(x){x.classList.remove("open")}); });
