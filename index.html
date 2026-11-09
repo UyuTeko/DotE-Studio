@@ -367,9 +367,15 @@ input[type="color"].color-face{width:52px;flex:none;height:auto;min-height:46px;
 input[type="color"].rep-face{width:34px;height:30px;flex:none;padding:2px;box-shadow:var(--shadow-sm)}
 
 /* numeric partners for sliders: sized to the digits they actually hold */
-.num-inp{width:56px;flex:none;padding:3px 5px;font-size:12px}
-.fx-num{width:50px;flex:none;background:var(--panel);border:2px solid var(--line);padding:2px 4px;font-size:12px}
-.statusbar input[type="number"].num-inp{width:66px}
+/* numeric boxes size to their digits, never to the panel: these
+   selectors must out-specify the base input[type="number"]{width:100%}
+   rule (0,1,1) — a bare class selector (0,1,0) LOSES to it, which is
+   why the boxes used to stretch the full width of their row */
+input[type="number"].num-inp{width:52px;flex:none;padding:3px 5px;font-size:12px}
+input[type="number"].fx-num{width:52px;flex:none;background:var(--panel);border:2px solid var(--line);padding:2px 4px;font-size:12px}
+.statusbar input[type="number"].num-inp{width:62px}
+.win-check{display:inline-block;width:17px;flex:none}
+#windowPanel button{justify-content:flex-start}
 
 /* drag & drop reordering */
 [draggable="true"]{cursor:grab}
@@ -536,7 +542,7 @@ body.home-open .topbar,body.home-open .workspace{display:none}
 .imp-slider{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);margin-bottom:5px}
 .imp-slider span{flex:none;width:64px}
 .imp-slider input[type="range"]{flex:1;min-width:0}
-.imp-slider .fx-num{width:50px}
+.imp-slider input[type="number"].fx-num{width:52px}
 @media (max-width:640px){.imp-layout{flex-direction:column}.imp-side{width:100%}}
 
 @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
@@ -684,36 +690,15 @@ body{touch-action:manipulation}
         <button id="mActual">原寸の4倍で表示</button>
       </div>
     </div>
+    <div class="menu" id="menuWindow">
+      <button class="menu-btn" data-menu="menuWindow">ウィンドウ</button>
+      <div class="menu-panel" id="windowPanel" style="min-width:210px"></div>
+    </div>
     <div class="menu" id="menuHelp">
       <button class="menu-btn" data-menu="menuHelp">ヘルプ</button>
-      <div class="menu-panel" style="min-width:250px">
-        <div class="help-txt"><b>アプリ</b>ドット絵スタジオ</div>
-        <div class="help-txt"><b>Ctrl+ホイール</b>カーソル位置を中心に拡大・縮小</div>
-        <div class="help-txt"><b>Shift+ドラッグ</b>直線は5°刻み／図形は正方形に固定</div>
-        <div class="help-txt"><b>直線ツール</b>ドラッグ中は長さと角度が下のステータスバーに出ます</div>
-        <div class="help-txt"><b>Ctrl+V（画像）</b>PCでコピーした画像はそのままキャンバスへ貼り付けできます（サイズが違うときは合わせ方の確認が出ます）</div>
-        <div class="help-txt"><b>Shift（範囲選択中）</b>押している間は移動ツールになります。移動は離しても確定せず、別の場所をクリックした位置で完了します</div>
-        <div class="help-txt"><b>Alt+ドラッグ</b>移動ツールで選択範囲を複製しながら移動</div>
-        <div class="help-txt"><b>Shift+クリック</b>ペンで前の点から直線を引く</div>
-        <div class="help-txt"><b>矢印キー</b>選択範囲の中身を1pxずつ移動</div>
-        <div class="help-txt"><b>Ctrl+S</b>PCに保存（.dspx）</div>
-        <div class="help-txt"><b>2本指</b>タブレットでは、2本指でつまむと拡大・縮小、2本指のまま動かすと移動（パン）できます。1本指とApple Pencilは描画です</div>
-        <div class="help-txt"><b>中ボタンドラッグ</b>キャンバス内を移動（パン）</div>
-        <div class="help-txt"><b>B / E / G / I</b>ペン・消し・塗り・スポイト</div>
-        <div class="help-txt"><b>L / R / M / Y</b>直線・図形・移動・ミラー</div>
-        <div class="help-txt"><b>V / X</b>範囲選択・色置き換え</div>
-        <div class="help-txt"><b>Alt+クリック</b>どこでもスポイト</div>
-        <div class="help-txt"><b>Ctrl+C / X / V</b>コピー／切り取り／貼り付け（最後に触った対象：キャンバス・レイヤー・フレーム）</div>
-        <div class="help-txt"><b>Ctrl+A / D</b>全て選択／複製（レイヤー・フレーム）</div>
-        <div class="help-txt"><b>右クリック</b>どこでもメニューが開く（キャンバスでドラッグすると消しゴム）</div>
-        <div class="help-txt"><b>[ / ]</b>ブラシの太さ変更</div>
-        <div class="help-txt"><b>Delete</b>選択範囲／レイヤー／フレームを消す（最後に触った対象）</div>
-      </div>
-    </div>
-    <div class="menu" id="menuToolHelp">
-      <button class="menu-btn" data-menu="menuToolHelp">ツールの説明</button>
-      <div class="menu-panel" style="min-width:280px">
-        <div id="toolHelpList"></div>
+      <div class="menu-panel" style="min-width:220px">
+        <button id="mHelpOpen">ヘルプ…</button>
+        <button id="mToolHelpOpen">ツールの説明…</button>
       </div>
     </div>
   </nav>
@@ -723,6 +708,7 @@ body{touch-action:manipulation}
       <option value="8">8 × 8</option><option value="16">16 × 16</option><option value="24">24 × 24</option>
       <option value="32" selected>32 × 32</option><option value="48">48 × 48</option><option value="64">64 × 64</option>
       <option value="96">96 × 96</option><option value="128">128 × 128</option>
+      <option value="cur" id="sizeCurOpt" hidden>32 × 32</option>
       <option value="custom">自由に指定…</option>
     </select>
     <span class="sep"></span>
@@ -796,7 +782,7 @@ body{touch-action:manipulation}
 
   <!-- LEFT: tools -->
   <div class="side">
-    <section class="panel" aria-label="ツール">
+    <section class="panel" id="panelTools" aria-label="ツール">
       <h2>ツール</h2>
       <div class="tool-grid" id="toolGrid">
         <button class="tool-btn is-on" data-tool="pen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5L17 3z"/></svg>ペン<span class="tool-key">B</span></button>
@@ -910,7 +896,7 @@ body{touch-action:manipulation}
       <p class="sel-mode-note">Shiftを押している間は移動ツールになります（そのままドラッグで中身が浮き、別の場所をクリックした位置で移動が完了します）。移動ツールで Alt+ドラッグすると複製しながら移動。矢印キーで中身を1pxずつ移動できます。</p>
     </section>
 
-    <section class="panel" aria-label="レイヤー">
+    <section class="panel" id="panelLayers" aria-label="レイヤー">
       <h2>レイヤー</h2>
       <div id="layerInfo" style="font-size:11px;color:var(--ink2);margin-bottom:4px"></div>
       <div class="layer-list" id="layerList"></div>
@@ -947,7 +933,7 @@ body{touch-action:manipulation}
           <canvas id="selCanvas" class="hires" width="512" height="512" oncontextmenu="return false"></canvas>
         </div>
       </div>
-      <div class="statusbar">
+      <div class="statusbar" id="statusBar">
         <span>座標 <b id="posLabel">—</b></span>
         <span>色 <b id="hoverColor">—</b></span>
         <span>ツール <b id="toolLabel">ペン</b></span>
@@ -957,7 +943,7 @@ body{touch-action:manipulation}
       </div>
     </section>
 
-    <section class="panel frames-panel">
+    <section class="panel frames-panel" id="panelFrames">
       <div class="frames-row">
         <div class="frames-strip" id="framesStrip"></div>
         <div class="frames-ctl">
@@ -971,7 +957,7 @@ body{touch-action:manipulation}
             <button class="px-btn" id="frameFxBtn">フレームのエフェクト…</button>
           </div>
           <div class="row">
-            <label style="margin:0">速さ <span id="fpsLabel">8</span>FPS</label>
+            <label style="margin:0">速さ（FPS）</label>
             <input type="range" id="fpsRange" min="1" max="24" value="8" style="width:80px">
             <input type="number" class="num-inp" id="fpsNum" min="1" max="24" value="8" style="width:46px" aria-label="速さ（数値）">
             <button class="px-btn is-on" id="playBtn">▶ 再生</button>
@@ -983,7 +969,7 @@ body{touch-action:manipulation}
 
   <!-- RIGHT: color / used colors / replace / export -->
   <div class="side side-right">
-    <section class="panel" aria-label="プレビュー">
+    <section class="panel" id="panelPreview" aria-label="プレビュー">
       <h2>プレビュー <span class="h2-note">タップで拡大</span></h2>
       <div class="preview-flex">
         <div class="preview-box" id="previewBox" title="タップで拡大"><canvas id="previewCanvas" width="32" height="32"></canvas></div>
@@ -998,7 +984,7 @@ body{touch-action:manipulation}
       </div>
     </section>
 
-    <section class="panel" aria-label="カラー">
+    <section class="panel" id="panelColor" aria-label="カラー">
       <h2>カラー</h2>
       <div class="cur-color mb">
         <input type="color" id="colorPicker" class="color-face" value="#26221c" aria-label="色選び（押すと色を選択できます）" title="押すと色を選択できます">
@@ -1027,7 +1013,7 @@ body{touch-action:manipulation}
       <button class="px-btn mt" id="transpBtn" style="width:100%">透明を選ぶ（消しゴム色）</button>
     </section>
 
-    <section class="panel used-panel" aria-label="使用色一覧">
+    <section class="panel used-panel" id="panelUsed" aria-label="使用色一覧">
       <h2>使用色一覧 <span class="h2-note" id="usedCount">0色</span></h2>
       <div class="mini-row" style="margin-bottom:6px">
         <button class="px-btn" id="usedFxBtn" style="font-size:11px;padding:3px 8px" title="ONにすると、エフェクトをかけた後の見た目の色で集計します">エフェクトを反映した色：OFF</button>
@@ -1130,7 +1116,7 @@ body{touch-action:manipulation}
     <h2>エフェクト<span id="fxTargetName"></span></h2>
     <div class="fxp-row" id="fxOpacityRow">
       <div class="fxp-ctls" style="margin-top:0">
-        <label class="fxp-ctl"><span>不透明度</span><input type="range" id="fxOpacity" min="0" max="100" value="100"><input type="number" class="fx-num" id="fxOpacityNum" min="0" max="100" value="100" aria-label="不透明度（数値）"><b id="fxOpacityVal">100%</b></label>
+        <label class="fxp-ctl"><span>不透明度</span><input type="range" id="fxOpacity" min="0" max="100" value="100"><input type="number" class="fx-num" id="fxOpacityNum" min="0" max="100" value="100" aria-label="不透明度（数値）"><span>%</span></label>
       </div>
     </div>
     <div id="fxList"></div>
@@ -1181,7 +1167,7 @@ body{touch-action:manipulation}
       </div>
       <p class="note" id="impSheetNote"></p>
     </div>
-    <div class="imp-sec" id="impResSec">
+    <div class="imp-sec" id="impResSec" style="display:none">
       <div class="imp-sec-title">ドット化の粒度（読み込み解像度）と縮小方法</div>
       <div class="imp-grid2">
         <div><label>横 px</label><input type="number" id="impResW" min="1" value="32"></div>
@@ -1193,7 +1179,7 @@ body{touch-action:manipulation}
         <div class="imp-slider"><span>コントラスト</span><input type="range" id="impContrast" min="-100" max="100" value="0"><input type="number" class="fx-num" id="impContrastNum" min="-100" max="100" value="0" aria-label="コントラスト（数値）"></div>
       </div>
     </div>
-    <div class="imp-sec">
+    <div class="imp-sec" id="impColorSec" style="display:none">
       <div class="imp-sec-title">色の調整</div>
       <div class="imp-grid2">
         <div><label>色数の上限（0＝無制限）</label><input type="number" id="impMaxColors" min="0" max="256" value="0"></div>
@@ -1209,7 +1195,7 @@ body{touch-action:manipulation}
       </div>
       <button class="px-btn mt" id="impPalBtn" style="width:100%">画像からパレットを抽出して追加</button>
     </div>
-    <div class="imp-sec">
+    <div class="imp-sec" id="impCropSec" style="display:none">
       <div class="imp-sec-title">読み込み範囲の切り抜き（空欄＝全体）</div>
       <div class="imp-grid4">
         <div><label>開始 X</label><input type="number" id="impCropX" min="0" placeholder="0"></div>
@@ -1238,6 +1224,50 @@ body{touch-action:manipulation}
     </div>
   </div>
 </div>
+
+<div class="exp-backdrop" id="helpBackdrop" hidden>
+  <div class="panel exp-dialog" role="dialog" aria-label="ヘルプ" style="width:min(480px,94vw)">
+    <h2>ヘルプ</h2>
+    <div style="max-height:68vh;overflow:auto">
+        <div class="help-txt"><b>アプリ</b>ドット絵スタジオ</div>
+        <div class="help-txt"><b>Ctrl+ホイール</b>カーソル位置を中心に拡大・縮小</div>
+        <div class="help-txt"><b>Shift+ドラッグ</b>直線は5°刻み／図形は正方形に固定</div>
+        <div class="help-txt"><b>直線ツール</b>ドラッグ中は長さと角度が下のステータスバーに出ます</div>
+        <div class="help-txt"><b>Ctrl+V（画像）</b>PCでコピーした画像はそのままキャンバスへ貼り付けできます（サイズが違うときは合わせ方の確認が出ます）</div>
+        <div class="help-txt"><b>Shift（範囲選択中）</b>押している間は移動ツールになります。移動は離しても確定せず、別の場所をクリックした位置で完了します</div>
+        <div class="help-txt"><b>Alt+ドラッグ</b>移動ツールで選択範囲を複製しながら移動</div>
+        <div class="help-txt"><b>Shift+クリック</b>ペンで前の点から直線を引く</div>
+        <div class="help-txt"><b>矢印キー</b>選択範囲の中身を1pxずつ移動</div>
+        <div class="help-txt"><b>Ctrl+S</b>PCに保存（.dspx）</div>
+        <div class="help-txt"><b>2本指</b>タブレットでは、2本指でつまむと拡大・縮小、2本指のまま動かすと移動（パン）できます。1本指とApple Pencilは描画です</div>
+        <div class="help-txt"><b>中ボタンドラッグ</b>キャンバス内を移動（パン）</div>
+        <div class="help-txt"><b>描画中のパン</b>ペンなどで描いている途中に中ボタンを押して動かすか、Spaceを押しながら動かすと、線を切らずに表示だけ動かせます（ボタンを離すと描画に戻ります）</div>
+        <div class="help-txt"><b>B / E / G / I</b>ペン・消し・塗り・スポイト</div>
+        <div class="help-txt"><b>L / R / M / Y</b>直線・図形・移動・ミラー</div>
+        <div class="help-txt"><b>V / X</b>範囲選択・色置き換え</div>
+        <div class="help-txt"><b>Alt+クリック</b>どこでもスポイト</div>
+        <div class="help-txt"><b>Ctrl+C / X / V</b>コピー／切り取り／貼り付け（最後に触った対象：キャンバス・レイヤー・フレーム）</div>
+        <div class="help-txt"><b>Ctrl+A / D</b>全て選択／複製（レイヤー・フレーム）</div>
+        <div class="help-txt"><b>右クリック</b>どこでもメニューが開く（キャンバスでドラッグすると消しゴム）</div>
+        <div class="help-txt"><b>[ / ]</b>ブラシの太さ変更</div>
+        <div class="help-txt"><b>Delete</b>選択範囲／レイヤー／フレームを消す（最後に触った対象）</div>
+    </div>
+    <div class="mini-row mt">
+      <button class="px-btn primary" id="helpCloseBtn" style="flex:1">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="exp-backdrop" id="toolHelpBackdrop" hidden>
+  <div class="panel exp-dialog" role="dialog" aria-label="ツールの説明" style="width:min(480px,94vw)">
+    <h2>ツールの説明</h2>
+    <div id="toolHelpList" style="max-height:68vh;overflow:auto"></div>
+    <div class="mini-row mt">
+      <button class="px-btn primary" id="toolHelpCloseBtn" style="flex:1">閉じる</button>
+    </div>
+  </div>
+</div>
+
 
 <div class="exp-backdrop" id="setBackdrop" hidden>
   <div class="panel exp-dialog" role="dialog" aria-label="保存の設定" style="width:min(440px,94vw)">
@@ -1279,6 +1309,13 @@ body{touch-action:manipulation}
     <div class="exp-row">
       <label>最初のフレーム数（1〜64）</label>
       <input type="number" id="npFrames" min="1" max="64" value="1">
+    </div>
+    <div class="exp-row">
+      <div class="mini-row">
+        <div style="flex:1"><label>スプライトシートの列（1〜64）</label><input type="number" id="npCols" min="1" max="64" value="1"></div>
+        <div style="flex:1"><label>スプライトシートの行（1〜64）</label><input type="number" id="npRows" min="1" max="64" value="1"></div>
+      </div>
+      <p class="note" style="margin-top:4px">列と行はプロジェクトごとに保存され、次に開いたときもそのまま復元されます。</p>
     </div>
     <div class="exp-row" id="npHfpRow">
       <button class="px-btn teal" id="npHfpBtn" hidden style="width:100%">HackforPlayのキャラで始める…</button>
@@ -1702,7 +1739,7 @@ function spaceGet(x,y){
 function spaceSet(x,y,v){
   var s=spaceFrame(x,y); if(!s) return;
   var l=drawLayerOf(s.fi);
-  if(l) l.data[s.ly*W+s.lx]=v;
+  if(l){ l.data[s.ly*W+s.lx]=v; l._v=(l._v||0)+1; } /* _v feeds the flatten cache signature */
 }
 function spaceIn(x,y){ return !!spaceFrame(x,y); }
 function fixLayerSeq(){
@@ -1763,6 +1800,66 @@ document.querySelectorAll(".menu-panel button").forEach(function(b){
   b.addEventListener("click",function(){ document.querySelectorAll(".menu").forEach(function(x){x.classList.remove("open")}); });
 });
 
+/* ============ ヘルプ dialogs ============
+   The top bar has ONE ヘルプ menu; inside it, ヘルプ and ツールの説明
+   are two buttons that each open a dialog (the tool list itself is
+   still built by buildToolHelp into #toolHelpList, now in the dialog,
+   and tool buttons keep their right-click descriptions). */
+$("mHelpOpen").addEventListener("click",function(){ $("helpBackdrop").hidden=false; });
+$("mToolHelpOpen").addEventListener("click",function(){ $("toolHelpBackdrop").hidden=false; });
+$("helpCloseBtn").addEventListener("click",function(){ $("helpBackdrop").hidden=true; });
+$("toolHelpCloseBtn").addEventListener("click",function(){ $("toolHelpBackdrop").hidden=true; });
+$("helpBackdrop").addEventListener("click",function(e){ if(e.target===this) this.hidden=true; });
+$("toolHelpBackdrop").addEventListener("click",function(e){ if(e.target===this) this.hidden=true; });
+
+/* ============ ウィンドウ menu: show / hide the app's panels ============
+   Each entry toggles one panel element; a ✓ marks the ones currently
+   shown. The choice is kept in settings, so it survives reloads.
+   (The tool-option panels — 図形設定・選択範囲など — are NOT listed:
+   they follow the selected tool, as before.) */
+var PANEL_DEFS=[
+  {key:"tools",   label:"ツール",       id:"panelTools"},
+  {key:"layers",  label:"レイヤー",     id:"panelLayers"},
+  {key:"frames",  label:"フレーム",     id:"panelFrames"},
+  {key:"preview", label:"プレビュー",   id:"panelPreview"},
+  {key:"color",   label:"カラー",       id:"panelColor"},
+  {key:"used",    label:"使用色一覧",   id:"panelUsed"},
+  {key:"status",  label:"ステータスバー", id:"statusBar"}
+];
+function panelVisible(key){
+  /* settings is loaded further down the script; until then every
+     panel counts as visible (applyPanelVis runs again at startup) */
+  return !(typeof settings!=="undefined" && settings && settings.panels && settings.panels[key]===false);
+}
+function applyPanelVis(){
+  PANEL_DEFS.forEach(function(d){
+    var el=$(d.id); if(!el) return;
+    el.style.display=panelVisible(d.key)? "" : "none";
+  });
+}
+function buildWindowMenu(){
+  var box=$("windowPanel"); if(!box) return;
+  box.innerHTML="";
+  PANEL_DEFS.forEach(function(d){
+    var b=document.createElement("button");
+    var ck=document.createElement("span"); ck.className="win-check";
+    ck.textContent=panelVisible(d.key)? "✓" : "";
+    b.appendChild(ck);
+    b.appendChild(document.createTextNode(d.label));
+    b.addEventListener("click",function(){
+      if(!settings.panels) settings.panels={};
+      settings.panels[d.key]=!panelVisible(d.key);
+      saveSettings();
+      applyPanelVis();
+      buildWindowMenu();
+      document.querySelectorAll(".menu").forEach(function(x){x.classList.remove("open")});
+    });
+    box.appendChild(b);
+  });
+}
+buildWindowMenu();
+applyPanelVis();
+
 /* ============ right-click context menu ============ */
 var ctxMenuEl=null, ctxFresh=false;
 function closeCtx(){ if(ctxMenuEl){ ctxMenuEl.remove(); ctxMenuEl=null; } }
@@ -1818,13 +1915,13 @@ document.addEventListener("contextmenu",function(e){
 });
 
 /* ============ history ============ */
-function snapshot(){ return JSON.stringify({w:W,h:H,frames:frames,cur:curFrame,fg:frameGroups}); }
-function pushHistory(){ undoStack.push(snapshot()); if(undoStack.length>90) undoStack.shift(); redoStack.length=0; syncUndoBtns(); markEdit(); }
+function snapshot(){ return JSON.stringify({w:W,h:H,frames:frames,cur:curFrame,fg:frameGroups,c:expCols,r:expRows}); }
+function pushHistory(){ undoStack.push(snapshot()); if(undoStack.length>90) undoStack.shift(); redoStack.length=0; syncUndoBtns(); markEdit(); flatEpoch++; /* any discrete edit invalidates cached flattens */ }
 /* every edit bumps the project revision; the save-status display and
    the home badges compare it against the revisions captured when the
    project was last written to the PC / to the browser */
 function markEdit(){ projRev++; updateSaveStatus(); }
-function restore(s){ var d=JSON.parse(s); W=d.w; H=d.h; frames=d.frames; frameGroups=d.fg||[]; curFrame=Math.min(d.cur,frames.length-1); sel=null; normalizeLoaded(); syncCanvasSize(false); renderAll(); }
+function restore(s){ var d=JSON.parse(s); W=d.w; H=d.h; frames=d.frames; frameGroups=d.fg||[]; curFrame=Math.min(d.cur,frames.length-1); sel=null; if(d.c){ expCols=Math.max(1,Math.min(64,d.c)); expRows=Math.max(1,Math.min(64,d.r||1)); syncSheetUI(); } normalizeLoaded(); syncCanvasSize(false); renderAll(); }
 function undo(){ if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); syncUndoBtns(); toast("戻しました"); }
 function redo(){ if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); syncUndoBtns(); toast("やり直しました"); }
 function syncUndoBtns(){ $("undoBtn").disabled=!undoStack.length; $("redoBtn").disabled=!redoStack.length; $("mUndo").disabled=!undoStack.length; $("mRedo").disabled=!redoStack.length; }
@@ -1850,11 +1947,25 @@ function frameOff(){
   var fi=curDrawFrameIdx();
   return {x:(fi%L.cols)*W, y:Math.floor(fi/L.cols)*H};
 }
+/* The size readout always names the ACTUAL canvas size: a preset
+   square when it matches one, otherwise the dedicated current-size
+   option ("128 × 96") — never the "自由に指定…" entry, which used to
+   stay selected after an image import changed W/H to a non-preset
+   pair, hiding the real size from the user. */
+function syncSizeSel(){
+  var sizeSelEl=$("sizeSel"), curOpt=$("sizeCurOpt");
+  if(!sizeSelEl || !curOpt) return;
+  if(W===H && sizeSelEl.querySelector('option[value="'+W+'"]')){
+    curOpt.hidden=true; sizeSelEl.value=String(W);
+  } else {
+    curOpt.hidden=false; curOpt.textContent=W+" × "+H; sizeSelEl.value="cur";
+  }
+}
 function syncCanvasSize(resetHistory){
   var d=viewDims();
   mainC.width=d.w; mainC.height=d.h; overC.width=d.w; overC.height=d.h;
   prevC.width=W; prevC.height=H;
-  $("sizeSel").value = (W===H && $("sizeSel").querySelector('option[value="'+W+'"]')) ? String(W) : "custom";
+  syncSizeSel();
   /* re-derive the wrap's CSS size from the (possibly changed) view
      aspect right away: when the sheet's columns/rows change, the view
      dims change with them, and skipping this left the on-screen canvas
@@ -1910,7 +2021,9 @@ function setZoom(px,manual){
   var zr=$("zoomRange"); zr.max=maxStagePx(); zr.value=stagePx;
   $("zoomNum").value=stagePx;
   var vd=viewDims();
-  $("zoomLabel").textContent=stagePx+"px（1マス約"+Math.max(1,Math.round(stagePx/Math.max(vd.w,vd.h)))+"px）";
+  /* the box already shows the px number itself; the label only adds
+     the per-cell size so the value is never printed twice */
+  $("zoomLabel").textContent="（1マス約"+Math.max(1,Math.round(stagePx/Math.max(vd.w,vd.h)))+"px）";
   layoutWrap(); sizeHiRes();
 }
 function fitZoom(){
@@ -1921,15 +2034,26 @@ function fitZoom(){
   setZoom(s,false);
 }
 /* Hi-res overlay canvases are sized to the *displayed* pixel size so grid
-   lines land exactly on device pixels and stay crisp at any zoom. */
+   lines land exactly on device pixels and stay crisp at any zoom.
+   The resize + redraw is coalesced through requestAnimationFrame:
+   a wheel-zoom gesture fires dozens of events, and re-laying-out the
+   grid canvases for every tick was a visible source of zoom lag. */
+var hiResQueued=false;
 function sizeHiRes(){
-  var w=wrap.clientWidth, h=wrap.clientHeight;
-  if(!w||!h) return;
-  var dpr=window.devicePixelRatio||1;
-  [gridC,selC].forEach(function(c){
-    c.width=Math.round(w*dpr); c.height=Math.round(h*dpr);
+  if(hiResQueued) return;
+  hiResQueued=true;
+  requestAnimationFrame(function(){
+    hiResQueued=false;
+    var w=wrap.clientWidth, h=wrap.clientHeight;
+    if(!w||!h) return;
+    var dpr=window.devicePixelRatio||1;
+    [gridC,selC].forEach(function(c){
+      var nw=Math.round(w*dpr), nh=Math.round(h*dpr);
+      if(c.width!==nw) c.width=nw;
+      if(c.height!==nh) c.height=nh;
+    });
+    drawGrid(); drawSel();
   });
-  drawGrid(); drawSel();
 }
 function drawGrid(){
   var w=wrap.clientWidth, h=wrap.clientHeight; if(!w) return;
@@ -2229,7 +2353,54 @@ function compositeListA(list, useFx){
   return {data:out, alpha:hasAlpha? al : null};
 }
 function compositeList(list, useFx){ return compositeListA(list, useFx).data; }
+/* ============ flatten cache ============
+   Compositing a frame costs O(layers × pixels) with string colour
+   work, and render() used to redo it for EVERY frame on EVERY
+   pointermove — the main source of lag on big canvases. Results are
+   now cached per frame and reused while nothing that feeds them has
+   changed. The signature is built from structure, not pixels: layer
+   data versions (_v, bumped by spaceSet on every plotted cell),
+   visibility / opacity, and the effect lists; discrete operations
+   that rewrite pixel data wholesale bump flatEpoch via pushHistory /
+   renderAll / startFloat, which invalidates every entry at once. */
+var flatCache=new WeakMap(), flatEpoch=0;
+function fxSig(fx){
+  if(!fx) return "";
+  var l=fxList(fx);
+  return l.length? JSON.stringify(l) : "";
+}
+function nodeSigInto(list, parts, useFx){
+  for(var i=0;i<list.length;i++){
+    var n=list[i];
+    parts.push(n.type==="group"?"G":"L", n.visible===false?0:1, n.opacity==null?1:n.opacity, n.type==="layer"? (n._v||0):0, useFx? fxSig(n.fx):"");
+    if(n.type==="group") nodeSigInto(n.children, parts, useFx);
+  }
+}
+function frameSig(fr, useFx){
+  var parts=[W, H, fr.visible===false?0:1, fr.opacity==null?1:fr.opacity, fr.gid||0];
+  if(useFx){
+    parts.push(fxSig(fr.fx));
+    var g=fr.gid? findFGroup(fr.gid) : null;
+    if(g) parts.push(g.visible===false?0:1, g.opacity==null?1:g.opacity, fxSig(g.fx));
+  }
+  nodeSigInto(fr.layers, parts, useFx);
+  return parts.join("|");
+}
 function flattenFrameA(fi, useFx){
+  var fr=frames[fi]; if(!fr) return {data:blank(), alpha:null};
+  var sig=frameSig(fr, useFx);
+  var ent=flatCache.get(fr);
+  if(ent && ent.epoch===flatEpoch){
+    if(useFx && ent.fxSig===sig) return ent.fxRes;
+    if(!useFx && ent.rawSig===sig) return ent.rawRes;
+  }
+  var res=flattenFrameACompute(fi, useFx);
+  if(!ent){ ent={}; flatCache.set(fr, ent); }
+  ent.epoch=flatEpoch;
+  if(useFx){ ent.fxSig=sig; ent.fxRes=res; } else { ent.rawSig=sig; ent.rawRes=res; }
+  return res;
+}
+function flattenFrameACompute(fi, useFx){
   var fr=frames[fi]; if(!fr) return {data:blank(), alpha:null};
   var g = (useFx && fr.gid) ? findFGroup(fr.gid) : null;
   if(useFx && (fr.visible===false || (g && g.visible===false))) return {data:blank(), alpha:null};
@@ -2250,24 +2421,38 @@ function flattenFrameA(fi, useFx){
 }
 function flattenFrame(fi, useFx){ return flattenFrameA(fi, useFx).data; }
 
-/* ============ rendering ============ */
+/* ============ rendering ============
+   Pixel data is rasterised through ONE shared offscreen canvas via
+   ImageData (typed-array writes + a hex→rgb cache) and then blitted
+   with drawImage. The old per-pixel fillRect loop — with a fillStyle
+   change and, for alpha pixels, a globalAlpha change per dot — was
+   the other half of the big-canvas lag; this is several times faster
+   at 512×512 and honours the same per-pixel alpha semantics. */
+var rasterC=document.createElement("canvas");
+var rgbCache={};
+function rasterOf(res, mul){
+  if(rasterC.width!==W || rasterC.height!==H){ rasterC.width=W; rasterC.height=H; }
+  var rx=rasterC.getContext("2d");
+  var img=rx.createImageData(W, H), px=img.data;
+  var data=res.data, alpha=res.alpha;
+  var m=(mul==null? 1 : mul);
+  for(var i=0;i<data.length;i++){
+    var c=data[i]; if(!c) continue;
+    var a=(alpha? alpha[i] : 1)*m; if(a<=0) continue;
+    var rgb=rgbCache[c]; if(!rgb){ rgb=hexToRgb(c); rgbCache[c]=rgb; }
+    var o=i*4;
+    px[o]=rgb[0]; px[o+1]=rgb[1]; px[o+2]=rgb[2]; px[o+3]=a>=1? 255 : (a*255+.5)|0;
+  }
+  rx.putImageData(img, 0, 0);
+  return rasterC;
+}
 function drawFrameTo(ctx, data, alpha){
-  ctx.save(); if(alpha!=null) ctx.globalAlpha=alpha;
-  for(var y=0;y<H;y++) for(var x=0;x<W;x++){ var c=data[y*W+x]; if(c){ ctx.fillStyle=c; ctx.fillRect(x,y,1,1); } }
-  ctx.restore();
+  ctx.drawImage(rasterOf({data:data, alpha:null}, alpha), 0, 0);
 }
 /* Draw a {data, alpha} flatten result, honouring per-pixel alpha. */
 function drawFrameToA(ctx, res, alphaMul){
   if(!res) return;
-  if(!res.alpha){ drawFrameTo(ctx, res.data, alphaMul); return; }
-  ctx.save();
-  var mul=(alphaMul==null?1:alphaMul);
-  for(var y=0;y<H;y++) for(var x=0;x<W;x++){
-    var i=y*W+x, c=res.data[i]; if(!c) continue;
-    var a=res.alpha[i]*mul; if(a<=0) continue;
-    ctx.globalAlpha=Math.min(1,a); ctx.fillStyle=c; ctx.fillRect(x,y,1,1);
-  }
-  ctx.restore();
+  ctx.drawImage(rasterOf(res, alphaMul), 0, 0);
 }
 function render(){
   /* keep the surface canvases matched to the view (frames added in
@@ -2295,13 +2480,34 @@ function render(){
     }
     drawFrameToA(mctx, resA, 1);
   }
+  /* While a stroke / selection / move drag is in progress, only the
+     canvas is repainted: the frames strip, layer list and used-colour
+     list are DOM-heavy and rebuilding them on every pointermove was
+     a major drag on large projects. They catch up at stroke end,
+     where endStroke (and every discrete operation) calls renderAll,
+     which forces a full refresh. */
+  if(strokeInProgress() && !renderForce) return;
   renderThumbs(); renderUsedColors(); renderLayers();
 }
+var renderForce=false;
 function renderPreviewFrame(idx){
   pctx.clearRect(0,0,W,H);
   if(frames[idx]) drawFrameToA(pctx, flattenFrameA(idx,true), 1);
 }
-function renderAll(){ render(); renderPreviewFrame(curFrame); drawSel(); }
+function renderAll(){
+  flatEpoch++; /* a finished operation may have rewritten pixel data in place */
+  renderForce=true; render(); renderForce=false;
+  renderPreviewFrame(curFrame); drawSel();
+}
+/* Stroke rendering is coalesced to one repaint per animation frame:
+   pointermove can fire far more often than the display refreshes,
+   and the extra repaints were pure waste on big canvases. */
+var renderQueued=false;
+function scheduleRender(){
+  if(renderQueued) return;
+  renderQueued=true;
+  requestAnimationFrame(function(){ renderQueued=false; render(); });
+}
 var dragFrameIdx=null;
 function frameItem(i){
   var fr=frames[i];
@@ -2310,6 +2516,7 @@ function frameItem(i){
   var btn=document.createElement("button"); btn.className="frame-thumb"; btn.title="フレーム "+(i+1)+"（右クリックでメニュー）";
   var cv=document.createElement("canvas"); cv.width=W; cv.height=H;
   drawFrameToA(cv.getContext("2d"), flattenFrameA(i,true), 1);
+  thumbPainters.push({fi:i, cv:cv, item:item});
   btn.appendChild(cv);
   item.addEventListener("dragstart",function(e){ dragFrameIdx=i; item.classList.add("drag-src"); if(e.dataTransfer){ e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain","frame");}catch(_){} } });
   item.addEventListener("dragend",function(){ dragFrameIdx=null; renderThumbs(); });
@@ -2427,6 +2634,7 @@ function dissolveFGroup(gid){
   frameGroups=frameGroups.filter(function(g){ return g.id!==gid; });
   renderAll(); toast("グループを解散しました");
 }
+var thumbSig="", thumbPainters=[];
 function renderThumbs(){
   /* keep the sheet's row count able to hold every frame, and the
      top-bar / dialog inputs showing the values actually in use */
@@ -2434,6 +2642,19 @@ function renderThumbs(){
   if(needR>expRows){ expRows=needR; }
   if($("sheetColsInp").value!=String(expCols) || $("sheetRowsInp").value!=String(expRows)) syncSheetUI();
   pruneFGroups();
+  /* Light path: when the strip's structure is unchanged (same frames,
+     groups and collapse states), only the thumbnail canvases are
+     repainted in place — rebuilding the whole strip's DOM on every
+     render was a steady cost on multi-frame projects. */
+  var sig=frames.length+"|"+W+"x"+H+"|"+frames.map(function(f){ return f.gid||0; }).join(",")+"|"+frameGroups.map(function(g){ return g.id+":"+(g.collapsed?1:0); }).join(",");
+  if(sig===thumbSig && thumbPainters.length){
+    thumbPainters.forEach(function(tp){
+      drawFrameToA(tp.cv.getContext("2d"), flattenFrameA(tp.fi, true), 1);
+      tp.item.classList.toggle("is-cur", tp.fi===curFrame);
+    });
+    return;
+  }
+  thumbSig=sig; thumbPainters=[];
   var strip=$("framesStrip"); strip.innerHTML="";
   var i=0;
   while(i<frames.length){
@@ -2784,6 +3005,7 @@ function startFloat(kind, p){
     else spaceSet(p.x,p.y,null);
   }
   drawing=true; moveMode="floatdrag";
+  flatEpoch++; /* the lift cleared cells in place: cached flattens are stale */
   render(); syncFloatSel();
   return true;
 }
@@ -3011,6 +3233,49 @@ function cancelStrokeForGesture(){
   render();
   if(floatMove) drawFloatOverlay();
 }
+/* ============ panning WHILE a stroke is in progress ============
+   A stroke no longer has to end before the view can move:
+   - pressing the middle button mid-stroke suspends the stroke and
+     pans; releasing it resumes the stroke from the cell now under
+     the cursor (anchors are re-based, so no jump line is drawn);
+   - holding Space does the same for a left-button drag, and pressing
+     Space in the middle of a stroke converts the ongoing drag into
+     a pan until Space is released;
+   - if the drawing button itself is released while panning, both
+     the pan and the stroke end together, cleanly.
+   (A second touch finger keeps the older behaviour: it cancels the
+   stroke and starts the two-finger gesture.) */
+var spaceDown=false, lastClientX=0, lastClientY=0;
+function strokeInProgress(){
+  return !!(drawing || selMode || moveMode || pendingRight);
+}
+function resumeStroke(e){
+  var p=eventPos(e); if(!p) return;
+  lastPos=p;
+  if(moveMode==="floatdrag" && floatMove){
+    /* re-base the float drag on the current cell so the content does
+       not jump by the panned distance */
+    floatMove.baseDx=floatMove.dx; floatMove.baseDy=floatMove.dy;
+    startPos=p;
+  }
+  if(drawing && (tool==="line"||tool==="shape")) drawOverlayShape();
+}
+document.addEventListener("keydown",function(e){
+  if(e.code!=="Space" || e.repeat) return;
+  var t=e.target;
+  if(t && (t.tagName==="INPUT" || t.tagName==="TEXTAREA" || t.tagName==="SELECT" || t.isContentEditable)) return;
+  spaceDown=true;
+  if(t===document.body || area.contains(t)) e.preventDefault();
+});
+document.addEventListener("keyup",function(e){
+  if(e.code!=="Space") return;
+  spaceDown=false;
+  if(panDrag && panDrag.space){
+    var pd=panDrag; panDrag=null;
+    wrap.classList.remove("panning"); area.classList.remove("panning");
+    if(pd.resume) resumeStroke({clientX:lastClientX, clientY:lastClientY});
+  }
+});
 /* Middle-button drag pans the canvas inside its area. */
 wrap.addEventListener("mousedown",function(e){ if(e.button===1) e.preventDefault(); });
 wrap.addEventListener("auxclick",function(e){ if(e.button===1) e.preventDefault(); });
@@ -3031,7 +3296,16 @@ wrap.addEventListener("pointerdown",function(e){
   if(e.button===1){
     e.preventDefault();
     wrap.setPointerCapture(e.pointerId);
-    panDrag={x:e.clientX, y:e.clientY, px:panX, py:panY};
+    /* mid-stroke middle press: suspend the stroke (resume=true) and
+       pan; endStroke / the Space keyup path resumes it afterwards */
+    panDrag={x:e.clientX, y:e.clientY, px:panX, py:panY, resume:strokeInProgress()};
+    wrap.classList.add("panning");
+    return;
+  }
+  if(spaceDown && e.button===0){
+    e.preventDefault();
+    try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
+    panDrag={x:e.clientX, y:e.clientY, px:panX, py:panY, space:true, resume:false};
     wrap.classList.add("panning");
     return;
   }
@@ -3166,6 +3440,14 @@ wrap.addEventListener("pointermove",function(e){
     if(touchGesture){ gestureStep(); return; }
   }
   if(touchGesture) return;
+  /* Space pressed in the middle of a stroke: the drag becomes a pan
+     from this point on (anchored at the previous pointer position so
+     the view does not jump); releasing Space resumes the stroke */
+  if(spaceDown && !panDrag && strokeInProgress() && e.pointerType!=="touch"){
+    panDrag={x:lastClientX, y:lastClientY, px:panX, py:panY, space:true, resume:true};
+    wrap.classList.add("panning");
+  }
+  lastClientX=e.clientX; lastClientY=e.clientY;
   if(panDrag){
     panX=panDrag.px+(e.clientX-panDrag.x);
     panY=panDrag.py+(e.clientY-panDrag.y);
@@ -3182,7 +3464,7 @@ wrap.addEventListener("pointermove",function(e){
       pushHistory(); drawing=true;
       linePixels(sx,sy,p.x,p.y).forEach(function(pt){ plot(pt[0],pt[1],null); });
       lastPos=p; lastPlotPos=null;
-      render();
+      scheduleRender();
     }
     return;
   }
@@ -3224,7 +3506,7 @@ wrap.addEventListener("pointermove",function(e){
   if(effTool==="pen"||effTool==="eraser"){
     var c=effTool==="eraser"?null:color;
     linePixels(lastPos.x,lastPos.y,p.x,p.y).forEach(function(pt){ plot(pt[0],pt[1],c); });
-    lastPos=p; if(effTool==="pen") lastPlotPos=p; render();
+    lastPos=p; if(effTool==="pen") lastPlotPos=p; scheduleRender();
   }
 });
 function finishLasso(){
@@ -3273,12 +3555,27 @@ function endStroke(e){
     }
   }
   strokeFrame=null;
+  if(panDrag){
+    var pd2=panDrag; panDrag=null;
+    wrap.classList.remove("panning"); area.classList.remove("panning");
+    var strokeBtnUp = e && e.type==="pointerup" && e.button===0 && !pd2.space;
+    var cancelEv = e && e.type==="pointercancel";
+    if(!strokeBtnUp && !cancelEv){
+      /* the pan button (middle, or the left button of a Space pan)
+         was released: resume the suspended stroke where the cursor
+         is now, and keep it going */
+      drawFrameOverride=null;
+      if(pd2.resume && e && e.clientX!=null) resumeStroke(e);
+      return;
+    }
+    /* the drawing button went up mid-pan (or the pointer was
+       cancelled): fall through and finish the stroke normally */
+  }
   if(pendingRight){
     var pr=pendingRight; pendingRight=null; drawFrameOverride=null;
     if(e && e.clientX!=null) showCanvasCtx(e.clientX, e.clientY, pr.x, pr.y);
     return;
   }
-  if(panDrag){ panDrag=null; drawFrameOverride=null; wrap.classList.remove("panning"); return; }
   if(selMode){
     var wasLasso=selMode==="lasso";
     selMode=null;
@@ -3397,6 +3694,13 @@ if(stagePanelEl){
 area.addEventListener("mousedown",function(e){ if(e.button===1) e.preventDefault(); });
 area.addEventListener("auxclick",function(e){ if(e.button===1) e.preventDefault(); });
 area.addEventListener("pointerdown",function(e){
+  if(spaceDown && e.button===0 && !wrap.contains(e.target)){
+    e.preventDefault();
+    try{ area.setPointerCapture(e.pointerId); }catch(_){}
+    panDrag={x:e.clientX, y:e.clientY, px:panX, py:panY, space:true, resume:false};
+    area.classList.add("panning");
+    return;
+  }
   if(e.button!==1 || wrap.contains(e.target)) return; /* on the canvas, the wrap pans itself */
   e.preventDefault();
   try{ area.setPointerCapture(e.pointerId); }catch(_){}
@@ -3685,6 +3989,7 @@ function openNewDialog(){
   if(settings.auto && hasWorkToSave() && !document.body.classList.contains("home-open")) saveToBrowser(true);
   $("npName").value="ドット絵";
   $("npW").value=32; $("npH").value=32; $("npFrames").value=1;
+  $("npCols").value=1; $("npRows").value=1;
   npBg="transp"; setSeg("npBgSeg","v","transp");
   $("npBgColor").value="#ffffff"; $("npBgColor").style.display="none";
   $("newBackdrop").hidden=false;
@@ -3700,6 +4005,9 @@ $("npGoBtn").addEventListener("click",function(){
   if(isNaN(nw)||isNaN(nh)||nw<1||nh<1){ toast("サイズは 1以上の数で入力してね"); return; }
   if(isNaN(nf)||nf<1) nf=1;
   nf=Math.min(64, nf);
+  var nc=parseInt($("npCols").value,10), nr=parseInt($("npRows").value,10);
+  nc=isNaN(nc)? 1 : Math.max(1, Math.min(64, nc));
+  nr=isNaN(nr)? 1 : Math.max(1, Math.min(64, nr));
   var bgc=(npBg==="color")? $("npBgColor").value : null;
   closeNewDialog();
   hideHome();
@@ -3711,8 +4019,8 @@ $("npGoBtn").addEventListener("click",function(){
     frames.push(fr);
   }
   curFrame=0; previewIdx=0; sel=null;
-  fps=8; $("fpsRange").value=8; $("fpsNum").value=8; $("fpsLabel").textContent="8";
-  expCols=1; expRows=1; expPad=0; syncSheetUI();
+  fps=8; $("fpsRange").value=8; $("fpsNum").value=8;
+  expCols=nc; expRows=nr; expPad=0; syncSheetUI();
   viewMode="normal"; setSeg("viewModeSeg","m","normal");
   bgMode=0; wrap.style.background=""; wrap.style.backgroundSize=""; $("bgBtn").textContent="背景：市松";
   projName=name; $("projName").value=name;
@@ -3759,6 +4067,7 @@ function applyCanvasSize(nw, nh){
 }
 $("sizeSel").addEventListener("change",function(e){
   if(e.target.value==="custom"){ openSizeDialog(); return; }
+  if(e.target.value==="cur"){ return; } /* already exactly this size */
   var n=parseInt(e.target.value,10);
   if(n===W && n===H) return;
   applyCanvasSize(n, n);
@@ -3769,8 +4078,8 @@ function openSizeDialog(){
 }
 function closeSizeDialog(){
   $("sizeBackdrop").hidden=true;
-  /* keep the select showing the current size */
-  $("sizeSel").value = (W===H && $("sizeSel").querySelector('option[value="'+W+'"]')) ? String(W) : "custom";
+  /* keep the select showing the current (actual) size */
+  syncSizeSel();
 }
 $("sizeApplyBtn").addEventListener("click",function(){
   var nw=parseInt($("sizeW").value,10), nh=parseInt($("sizeH").value,10);
@@ -3858,7 +4167,7 @@ $("frameFxBtn").addEventListener("click",function(){
 });
 function setFps(v){
   fps=Math.max(1,Math.min(24, isNaN(v)?8:v));
-  $("fpsRange").value=fps; $("fpsNum").value=fps; $("fpsLabel").textContent=fps;
+  $("fpsRange").value=fps; $("fpsNum").value=fps;
   restartPreview();
 }
 $("fpsRange").addEventListener("input",function(e){ setFps(parseInt(e.target.value,10)); });
@@ -3884,9 +4193,38 @@ function insertNodeNear(fr, node, targetId, pos){
   if(pos==="before") loc.list.splice(loc.index,0,node);
   else loc.list.splice(loc.index+1,0,node);
 }
+/* Per-node composite cache for the layer thumbnails (same signature
+   idea as the frame flatten cache, keyed on the node itself). */
+var nodeCache=new WeakMap();
+function nodeSigOf(n){
+  var parts=[];
+  nodeSigInto([n], parts, true);
+  return W+"x"+H+"|"+parts.join("|");
+}
+function compositeNodeCached(n){
+  var sig=nodeSigOf(n);
+  var ent=nodeCache.get(n);
+  if(ent && ent.sig===sig && ent.epoch===flatEpoch) return ent.res;
+  var res=compositeListA([n], true);
+  nodeCache.set(n, {sig:sig, epoch:flatEpoch, res:res});
+  return res;
+}
+var layerSig="", layerPainters=[];
 function renderLayers(){
-  var list=$("layerList"); list.innerHTML="";
   var fr=frames[curFrame];
+  var sig=curFrame+"|"+W+"x"+H+"|"+fr.active+"|";
+  eachNode(fr.layers,function(n){
+    sig+=n.id+":"+(n.name||"")+":"+(n.visible?1:0)+":"+(n.collapsed?1:0)+":"+(n.opacity==null?1:n.opacity)+":"+fxSig(n.fx)+";";
+  });
+  if(sig===layerSig && layerPainters.length){
+    /* structure unchanged: repaint just the thumbnails in place */
+    layerPainters.forEach(function(lp){ drawFrameToA(lp.ctx, compositeNodeCached(lp.node), 1); });
+    var an2=activeNode();
+    $("layerInfo").textContent = an2 ? ("選択中： "+an2.name) : "";
+    return;
+  }
+  layerSig=sig; layerPainters=[];
+  var list=$("layerList"); list.innerHTML="";
   buildLayerRows(fr.layers, list, 0);
   var an=activeNode();
   $("layerInfo").textContent = an ? ("選択中： "+an.name) : "";
@@ -3910,7 +4248,8 @@ function buildLayerRows(nodes, container, depth){
     row.appendChild(eye);
     var th=document.createElement("div"); th.className="l-thumb";
     var cv=document.createElement("canvas"); cv.width=W; cv.height=H;
-    drawFrameToA(cv.getContext("2d"), compositeListA([n],true), 1);
+    drawFrameToA(cv.getContext("2d"), compositeNodeCached(n), 1);
+    layerPainters.push({node:n, ctx:cv.getContext("2d")});
     th.appendChild(cv); row.appendChild(th);
     var nm=document.createElement("span"); nm.className="layer-name"; nm.textContent=n.name;
     nm.title=n.name+"（ダブルクリックで名前の変更）";
@@ -4170,7 +4509,7 @@ function openFx(target){
      frame groups all composite with real alpha now */
   $("fxOpacityRow").style.display = "";
   var op=Math.round((n.opacity==null?1:n.opacity)*100);
-  $("fxOpacity").value=op; $("fxOpacityNum").value=op; $("fxOpacityVal").textContent=op+"%";
+  $("fxOpacity").value=op; $("fxOpacityNum").value=op;
   buildFxList();
   $("fxBackdrop").hidden=false;
 }
@@ -4325,7 +4664,7 @@ function setFxOpacity(v){
   var n=fxTargetNode(); if(!n) return;
   v=Math.max(0,Math.min(100, isNaN(v)?100:v));
   n.opacity=v/100;
-  $("fxOpacity").value=v; $("fxOpacityNum").value=v; $("fxOpacityVal").textContent=v+"%";
+  $("fxOpacity").value=v; $("fxOpacityNum").value=v;
   renderAll();
 }
 $("fxOpacity").addEventListener("input",function(e){ setFxOpacity(parseInt(e.target.value,10)); });
@@ -4585,7 +4924,7 @@ function doGif(){ downloadBlob(gifBlobNow(), fileBase()+".gif"); }
 /* Original project format: ".ds" is already taken (Nintendo DS etc.), so the
    studio's own format is ".dspx" (dot studio pixel). Content is JSON. */
 function projectPayload(){
-  return {app:"dot-studio", format:"dspx", version:2, name:projName, w:W, h:H, fps:fps, frames:frames, frameGroups:frameGroups};
+  return {app:"dot-studio", format:"dspx", version:2, name:projName, w:W, h:H, fps:fps, cols:expCols, rows:expRows, frames:frames, frameGroups:frameGroups};
 }
 function doSaveProj(){
   var blob=new Blob([JSON.stringify(projectPayload())],{type:"application/octet-stream"});
@@ -4620,7 +4959,7 @@ var curProjId=null, projPcSaved=false;
 var projLive=false;
 var projRev=0, pcSavedRev=-1, pcSavedAt=null, browserSavedRev=-1, lastBrowserAt=null;
 var quotaWarned=false, lastDeleted=null;
-var settings={auto:true, interval:60, lastId:null, theme:"auto", themeColor:null};
+var settings={auto:true, interval:60, lastId:null, theme:"auto", themeColor:null, panels:{}};
 function loadSettings(){
   try{ var s=JSON.parse(localStorage.getItem(SET_KEY)||"null"); if(s && typeof s==="object") settings=Object.assign(settings,s); }catch(e){}
 }
@@ -4755,9 +5094,14 @@ function applyLoadedProject(d){
   pushHistory();
   W=d.w; H=d.h||d.w; frames=d.frames; frameGroups=d.frameGroups||[]; curFrame=0;
   fps=d.fps||8; sel=null;
+  /* sprite-sheet columns / rows are part of the project: restore the
+     saved pair (old saves without them fall back to 1 × 1) */
+  expCols=Math.max(1, Math.min(64, parseInt(d.cols,10)||1));
+  expRows=Math.max(1, Math.min(64, parseInt(d.rows,10)||1));
+  syncSheetUI();
   if(typeof d.name==="string"){ projName=d.name; $("projName").value=d.name; }
   normalizeLoaded();
-  $("fpsRange").value=fps; $("fpsNum").value=fps; $("fpsLabel").textContent=fps;
+  $("fpsRange").value=fps; $("fpsNum").value=fps;
   syncCanvasSize(false);
   if(!manualZoom) fitZoom();
 }
@@ -5550,6 +5894,9 @@ $("jsonFile").addEventListener("change",function(e){
       pushHistory(); W=d.w; H=d.h||d.w; frames=d.frames; frameGroups=d.frameGroups||[]; curFrame=0; fps=d.fps||8; sel=null;
       if(typeof d.name==="string"){ projName=d.name; $("projName").value=d.name; }
       normalizeLoaded();
+      expCols=Math.max(1, Math.min(64, parseInt(d.cols,10)||1));
+      expRows=Math.max(1, Math.min(64, parseInt(d.rows,10)||1));
+      syncSheetUI();
       /* legacy saves: a single global effect set lived outside the layers */
       if(d.effects){
         frames.forEach(function(fr){
@@ -5558,7 +5905,7 @@ $("jsonFile").addEventListener("change",function(e){
           if(first) first.fx=saneFx(Object.assign({}, d.effects));
         });
       }
-      $("fpsRange").value=fps; $("fpsNum").value=fps; $("fpsLabel").textContent=fps;
+      $("fpsRange").value=fps; $("fpsNum").value=fps;
       curProjId=null; projPcSaved=true; projLive=true; /* it came from a file on the PC */
       projRev=0; pcSavedRev=0; pcSavedAt=null; browserSavedRev=-1; lastBrowserAt=null;
       updateSaveStatus();
@@ -5725,7 +6072,21 @@ function impNum(id, dflt){
   var v=parseInt($(id).value,10);
   return isNaN(v)? dflt : v;
 }
+/* The detail sections （ドット化の粒度 / 色の調整 / 切り抜き) belong to
+   the 画像読み込みの詳細設定 extension: while it is off they are not
+   shown and NONE of their values may influence the import. */
+function impDetailOn(){
+  return typeof extState!=="undefined" && !!extState.impdetail;
+}
+function applyImpDetailVis(){
+  var det=impDetailOn();
+  var sheet=(typeof impMode!=="undefined" && impMode==="sheet");
+  var r=$("impResSec"); if(r) r.style.display=(det && !sheet)? "" : "none";
+  var c=$("impColorSec"); if(c) c.style.display=det? "" : "none";
+  var k=$("impCropSec"); if(k) k.style.display=det? "" : "none";
+}
 function impCropRect(sw, sh){
+  if(!impDetailOn()) return {x:0, y:0, w:sw, h:sh}; /* no crop while the extension is off */
   function opt(id){ var v=$(id).value.trim(); return v===""? null : parseInt(v,10); }
   var x=opt("impCropX"), y=opt("impCropY"), w=opt("impCropW"), h=opt("impCropH");
   if(x==null && y==null && w==null && h==null) return {x:0,y:0,w:sw,h:sh};
@@ -5742,7 +6103,8 @@ function impStageCanvas(src){
   var cr=impCropRect(sw, sh);
   var a=document.createElement("canvas"); a.width=cr.w; a.height=cr.h;
   a.getContext("2d").drawImage(src, cr.x, cr.y, cr.w, cr.h, 0, 0, cr.w, cr.h);
-  var rot=((impRot%360)+360)%360;
+  var det=impDetailOn();
+  var rot=det? ((impRot%360)+360)%360 : 0;
   var swap=(rot===90||rot===270);
   var b=document.createElement("canvas");
   b.width=swap? a.height : a.width;
@@ -5750,7 +6112,7 @@ function impStageCanvas(src){
   var x=b.getContext("2d");
   x.translate(b.width/2, b.height/2);
   x.rotate(rot*Math.PI/180);
-  x.scale(impFlipH? -1:1, impFlipV? -1:1);
+  x.scale(det&&impFlipH? -1:1, det&&impFlipV? -1:1);
   x.drawImage(a, -a.width/2, -a.height/2);
   return b;
 }
@@ -5788,19 +6150,25 @@ function reduceColors(cells, maxN){
 /* run the whole pipeline for one source; returns {w,h,cells,colors} */
 function processImpSource(src){
   var stage=impStageCanvas(src);
+  var det=impDetailOn();
   var tw, th;
   if(impMode==="sheet"){
     var o=impSheetOpts();
     tw=o.cw*o.cols; th=o.ch*o.rows;
-  } else {
+  } else if(det){
     tw=Math.max(1, Math.min(2048, impNum("impResW", W)));
     th=Math.max(1, Math.min(2048, impNum("impResH", H)));
+  } else {
+    /* no granularity section without the extension: the target size
+       comes only from サイズの合わせ方 (image size or canvas size) */
+    tw=Math.max(1, Math.min(2048, impFit==="image"? stage.width : W));
+    th=Math.max(1, Math.min(2048, impFit==="image"? stage.height : H));
   }
   var c=document.createElement("canvas"); c.width=tw; c.height=th;
   var x=c.getContext("2d");
   /* "average" leans on the browser's smoothing resample; "centre" uses
      nearest-neighbour, which samples around each target pixel's centre */
-  x.imageSmoothingEnabled=(impScaleMethod==="avg");
+  x.imageSmoothingEnabled=((det? impScaleMethod : "avg")==="avg");
   if(impMode==="sheet" || impAspect==="stretch"){
     x.drawImage(stage, 0, 0, tw, th);
   } else {
@@ -5811,17 +6179,18 @@ function processImpSource(src){
     x.drawImage(stage, ox, oy, dw, dh);
   }
   var d=x.getImageData(0,0,tw,th).data;
-  var alphaTh=Math.max(0, Math.min(254, impNum("impAlpha", 110)));
-  var transRgb=impTransOn? hexToRgb($("impTransColor").value) : null;
+  var alphaTh=det? Math.max(0, Math.min(254, impNum("impAlpha", 110))) : 110;
+  var transRgb=(det&&impTransOn)? hexToRgb($("impTransColor").value) : null;
   var tol=impNum("impTransTol", 24);
-  var bf=impBrightV, cf=(impContrastV>=0)? 1+impContrastV/100 : 1+impContrastV/100;
+  var bf=det? impBrightV : 0, cv=det? impContrastV : 0;
+  var cf=1+cv/100;
   var cells=new Array(tw*th);
   var seen={};
   for(var i=0;i<tw*th;i++){
     var a=d[i*4+3];
     if(a<alphaTh){ cells[i]=null; continue; }
     var r=d[i*4], g=d[i*4+1], bl=d[i*4+2];
-    if(bf||impContrastV){
+    if(bf||cv){
       r=(r-128)*cf+128+bf*2.55;
       g=(g-128)*cf+128+bf*2.55;
       bl=(bl-128)*cf+128+bf*2.55;
@@ -5837,7 +6206,7 @@ function processImpSource(src){
     cells[i]=hex;
     seen[hex]=1;
   }
-  if(impPalSnap){
+  if(det&&impPalSnap){
     var cache2={};
     cells=cells.map(function(cc){
       if(!cc) return cc;
@@ -5847,7 +6216,7 @@ function processImpSource(src){
     seen={};
     cells.forEach(function(cc){ if(cc) seen[cc]=1; });
   } else {
-    var maxN=impNum("impMaxColors", 0);
+    var maxN=det? impNum("impMaxColors", 0) : 0;
     if(maxN>0){
       cells=reduceColors(cells, maxN);
       seen={};
@@ -5932,7 +6301,7 @@ function updateImpNotes(){
   $("impSheetRow").hidden=!sheet;
   $("impFitRow").style.display=sheet? "none" : "";
   $("impAspectRow").style.display=sheet? "none" : "";
-  $("impResSec").style.display=sheet? "none" : "";
+  applyImpDetailVis();
   var o=impSheetOpts();
   var extra=(impExtraFiles.length? " ・ ほか "+impExtraFiles.length+" 件の画像もフレームとして追加されます" : "");
   var gif=(impGifFrames? " ・ アニメーションGIF（"+impGifFrames.length+" フレームに分解します）" : "");
@@ -5942,7 +6311,9 @@ function updateImpNotes(){
     $("impSheetNote").textContent="画像全体を "+(o.cw*o.cols)+" × "+(o.ch*o.rows)+" px に合わせてから、1枚 "+o.cw+" × "+o.ch+" で "+o.cols+" 列 × "+o.rows+" 行に分割します";
   } else {
     $("impFitNote").textContent=(impGifFrames || impDest==="project")
-      ? "読み込む大きさは下の「ドット化の粒度」で決まります"
+      ? (impDetailOn()
+        ? "読み込む大きさは下の「ドット化の粒度」で決まります"
+        : "読み込む大きさは上の「サイズの合わせ方」で決まります")
       : (impFit==="image"
         ? "キャンバスサイズを画像の大きさ（"+sd.w+" × "+sd.h+"）に変更します"
         : "画像を今のキャンバス（"+W+" × "+H+"）に合わせて拡大・縮小します");
@@ -6301,7 +6672,7 @@ if(window.matchMedia){ window.matchMedia("(prefers-color-scheme: dark)").addEven
    UI exists in the page from the start but stays hidden until its
    switch is on. */
 var EXT_KEY="dot-studio.extensions.v1";
-var extState={hfp:false, palettes:false, svgexport:false, textstamp:false, themecolor:false};
+var extState={hfp:false, palettes:false, svgexport:false, textstamp:false, themecolor:false, impdetail:false};
 try{ var exs=JSON.parse(localStorage.getItem(EXT_KEY)||"null"); if(exs && typeof exs==="object") extState=Object.assign(extState, exs); }catch(e){}
 function saveExtState(){ try{ localStorage.setItem(EXT_KEY, JSON.stringify(extState)); }catch(e){} }
 var EXT_DEFS=[
@@ -6321,6 +6692,10 @@ var EXT_DEFS=[
     name:"文字スタンプ",
     meta:"ツールに「文字」を追加 ・ Pixel M Plus 12",
     desc:"有効にすると、ツールに「文字」が増えます。入力した文字列を Pixel M Plus 12 フォントで描いてドットとして読み取り、今の色でキャンバスに置けます。大きさはフォントの実寸（12px）の等倍〜3倍です。" },
+  { id:"impdetail",
+    name:"画像読み込みの詳細設定",
+    meta:"読み込みに「ドット化の粒度」「色の調整」「読み込み範囲の切り抜き」を追加",
+    desc:"有効にすると、画像の読み込みダイアログに「ドット化の粒度（読み込み解像度）と縮小方法」「色の調整」「読み込み範囲の切り抜き」の3セクションが現れます。無効の間はこれらの設定は使われず、画像は全体をそのまま、合わせ方の設定だけで読み込まれます。" },
   { id:"themecolor",
     name:"テーマカラー",
     meta:"アプリ全体の配色テーマを変更 ・ 森／海／夕焼け／さくら／砂漠／モノクロ",
@@ -6398,6 +6773,11 @@ function applyExtState(){
   $("mAccent").hidden=!extState.themecolor;
   applyTheme();
   buildToolHelp();
+  /* image-import detail sections follow their extension */
+  applyImpDetailVis();
+  /* ウィンドウ menu state (settings only exists by now) */
+  applyPanelVis();
+  buildWindowMenu();
 }
 
 /* ============ palette collection extension ============
@@ -6732,7 +7112,7 @@ function hfpStartProject(it, url){
         frames.push(fr);
       }
       curFrame=0; previewIdx=0; sel=null;
-      fps=8; $("fpsRange").value=8; $("fpsNum").value=8; $("fpsLabel").textContent="8";
+      fps=8; $("fpsRange").value=8; $("fpsNum").value=8;
       expCols=cols; expRows=rows; expPad=0; syncSheetUI();
       viewMode=frames.length>1? "sheet" : "normal";
       setSeg("viewModeSeg","m",viewMode);
