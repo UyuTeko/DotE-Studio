@@ -598,6 +598,31 @@ body{touch-action:manipulation}
   input[type="range"]{height:30px}
   .ctx-menu button{padding:11px 10px;font-size:14px}
   .home-pin{padding:6px 10px}
+  /* sliders are dragged with a fingertip on tablets: a 30px-tall
+     track with a thumb to match, and number boxes tall enough to
+     tap without zooming in */
+  input[type="range"]::-webkit-slider-thumb{width:26px;height:26px}
+  input[type="range"]::-moz-range-thumb{width:24px;height:24px}
+  input[type="number"].num-inp,input[type="number"].fx-num{min-height:36px;font-size:13px}
+  input[type="number"].tb-num{min-height:36px}
+  select.px-btn{min-height:42px}
+  .seg button{min-height:38px}
+  .frames-ctl .px-btn,.layer-bar .px-btn{min-height:38px}
+  .used-item{min-height:38px}
+  .used-item .u-to-rep{padding:6px 9px}
+  .fgroup-chip{min-height:52px}
+  .ext-switch{width:52px;height:30px}
+  .ext-switch i{width:20px;height:20px}
+  .ext-switch[aria-checked="true"] i{left:26px}
+  .how-dot{width:16px;height:16px}
+}
+/* landscape tablets: the editor's three columns stay, the side
+   columns slim down a touch and the top bar compacts so the canvas
+   keeps the height */
+@media (orientation:landscape) and (pointer:coarse) and (min-width:761px){
+  .workspace{grid-template-columns:228px minmax(0,1fr) 248px;gap:8px;padding:8px}
+  .topbar{padding:4px 8px}
+  .frames-panel{padding:6px 8px}
 }
 /* landscape tablets: keep the three-column editor, just a little tighter */
 @media (min-width:1081px) and (max-width:1280px) and (orientation:landscape){
@@ -1312,7 +1337,9 @@ body{touch-action:manipulation}
         <div class="help-box"><h3>Shift+クリック</h3><p>ペンで前の点から直線を引けます。</p></div>
         <div class="help-box"><h3>矢印キー</h3><p>選択範囲の中身を1pxずつ移動します。</p></div>
         <div class="help-box"><h3>Ctrl+S</h3><p>PCに保存（.dspx）します。</p></div>
-        <div class="help-box"><h3>2本指（タブレット）</h3><p>2本指でつまむと拡大・縮小、2本指のまま動かすと移動（パン）できます。1本指とApple Pencilは描画です。</p></div>
+        <div class="help-box"><h3>2本指（タブレット）</h3><p>2本指でつまむと拡大・縮小、2本指のまま動かすと移動（パン）できます。ピンチしようとして1本目の指で描き始めてしまっても、2本目を置いた瞬間にその線は自動で取り消されるので、跡は残りません。全ての指を離すまで描画は再開しません。Apple Pencilは常に描画、指はジェスチャー優先です。手のひらが触れても描画されません（パームリジェクション）。</p></div>
+        <div class="help-box"><h3>2本指タップ／3本指タップ</h3><p>タブレットでは、2本指で軽くタップすると「戻す」、3本指で軽くタップすると「やり直し」になります（動かさずに素早く離したときだけ効きます）。</p></div>
+        <div class="help-box"><h3>長押しスポイト（タブレット）</h3><p>ペン系のツールでキャンバスを押したまま動かさずにいると、そのマスの色をスポイトで拾います。拾った時点で押したときのドットは取り消されます。</p></div>
         <div class="help-box"><h3>中ボタンドラッグ</h3><p>キャンバス内を移動（パン）します。</p></div>
         <div class="help-box"><h3>描画中のパン</h3><p>ペンなどで描いている途中に中ボタンを押して動かすか、Spaceを押しながら動かすと、線を切らずに表示だけ動かせます（ボタンを離すと描画に戻ります）。</p></div>
         <div class="help-box"><h3>B / E / G / I</h3><p>ペン・消しゴム・塗りつぶし・スポイトのショートカットです。</p></div>
@@ -2190,6 +2217,14 @@ function fitZoom(){
    a wheel-zoom gesture fires dozens of events, and re-laying-out the
    grid canvases for every tick was a visible source of zoom lag. */
 var hiResQueued=false;
+/* The grid / selection overlays are the only surfaces sized by the
+   device pixel ratio (the picture itself is a W×H pixel canvas).
+   On a 3x tablet display a full-DPR overlay is 9x the pixels of the
+   CSS box for hairlines that gain nothing past 2x — pixel art is
+   shown at integer scales anyway — so the overlay resolution is
+   capped at 2x, which cuts overlay redraw cost by over half on
+   high-DPR tablets while the lines stay crisp. */
+function effDpr(){ return Math.min(window.devicePixelRatio||1, 2); }
 function sizeHiRes(){
   if(hiResQueued) return;
   hiResQueued=true;
@@ -2197,7 +2232,7 @@ function sizeHiRes(){
     hiResQueued=false;
     var w=wrap.clientWidth, h=wrap.clientHeight;
     if(!w||!h) return;
-    var dpr=window.devicePixelRatio||1;
+    var dpr=effDpr();
     [gridC,selC].forEach(function(c){
       var nw=Math.round(w*dpr), nh=Math.round(h*dpr);
       if(c.width!==nw) c.width=nw;
@@ -2208,7 +2243,7 @@ function sizeHiRes(){
 }
 function drawGrid(){
   var w=wrap.clientWidth, h=wrap.clientHeight; if(!w) return;
-  var dpr=window.devicePixelRatio||1;
+  var dpr=effDpr();
   gctx.setTransform(dpr,0,0,dpr,0,0);
   gctx.clearRect(0,0,w,h);
   if(!showGrid) return;
@@ -2237,11 +2272,17 @@ function drawGrid(){
   else if(dark){ minor="rgba(255,255,255,.22)"; major="rgba(255,255,255,.5)"; frame="rgba(255,255,255,.35)"; }
   else { minor="rgba(30,25,15,.22)"; major="rgba(30,25,15,.5)"; frame="rgba(30,25,15,.35)"; }
   gctx.lineWidth=1;
-  gctx.strokeStyle = minor;
-  gctx.beginPath();
-  for(var i=1;i<vd.w;i++) seg(i*stepX,0,i*stepX,h);
-  for(var j=1;j<vd.h;j++) seg(0,j*stepY,w,j*stepY);
-  gctx.stroke();
+  /* zoomed far out on a huge canvas the per-cell minor lines are
+     sub-pixel mush — hundreds of strokes for nothing visible; the
+     8-cell major grid still gives the scale. Skipping them is one
+     of the big-canvas zoom/pan wins. */
+  if(stepX>=3 && stepY>=3){
+    gctx.strokeStyle = minor;
+    gctx.beginPath();
+    for(var i=1;i<vd.w;i++) seg(i*stepX,0,i*stepX,h);
+    for(var j=1;j<vd.h;j++) seg(0,j*stepY,w,j*stepY);
+    gctx.stroke();
+  }
   gctx.strokeStyle = major;
   gctx.beginPath();
   for(var a=0;a<=vd.w;a+=8) seg(a*stepX,0,a*stepX,h);
@@ -2261,7 +2302,7 @@ function drawGrid(){
 }
 function drawSel(){
   var w=wrap.clientWidth, h=wrap.clientHeight; if(!w) return;
-  var dpr=window.devicePixelRatio||1;
+  var dpr=effDpr();
   sctx.setTransform(dpr,0,0,dpr,0,0);
   sctx.clearRect(0,0,w,h);
   var label = sel ? ((sel.x1-sel.x0+1)+" × "+(sel.y1-sel.y0+1)) : "なし";
@@ -3689,13 +3730,82 @@ function renderRecent(){
   });
 }
 /* ============ two-finger touch gestures (iPad / tablets) ============
-   One finger — and the Apple Pencil (pointerType "pen") — draws
-   exactly like a mouse. When a second touch finger lands, the canvas
-   switches to gesture mode: pinching zooms around the fingers'
-   midpoint and moving both fingers pans. The stroke the first finger
-   was making is cancelled (pixels already down stay down) and the
-   remaining finger never resumes drawing when the gesture ends. */
+   Fingers are GESTURE-FIRST, the Pencil is DRAW-ALWAYS: a touch
+   pointer draws only while it is the ONLY finger down, and the
+   moment a second finger lands the in-progress stroke is rolled
+   back COMPLETELY — every pixel it put down is restored from the
+   pre-stroke snapshot and its history entry is removed, so a pinch
+   never leaves a stray scribble behind (the old behaviour kept the
+   pixels, which is exactly the "ピンチしたいのに書いちゃう" bug).
+   After a gesture, drawing stays locked out until EVERY finger has
+   lifted, so the finger left behind can never resume the cancelled
+   stroke and fire pixels on its own. A contact patch far larger
+   than a fingertip is a palm and is ignored as drawing input
+   altogether (palm rejection). Quick taps that never became a
+   pinch are commands instead: 2-finger tap = 戻す, 3-finger tap =
+   やり直し. A long press (no movement) with a pen-like tool is the
+   eyedropper, drawing-app style. */
 var touchPts=new Map();   /* pointerId -> {x, y} of live touch pointers */
+var touchLockout=false;   /* true from gesture start until all fingers are up */
+var palmIds=new Set();    /* pointerIds rejected as palms: never tracked */
+/* What the current single-finger touch stroke looked like when it
+   began, so a gesture can roll it back without a trace:
+   {undoLen, redoCopy, rev, sel, floatGeom, scaleGeom, liftedMove,
+   liftedScale, hadStroke}. Captured on the first finger's
+   pointerdown (wrap and stage share it through noteTouchStroke). */
+var touchStrokeRec=null;
+/* Tap detection for the whole contact sequence: {max, t0, moved}.
+   max = most fingers down at once, t0 = first finger down,
+   moved = the view actually pinched / panned past a small slop. */
+var tapTrack=null;
+/* Long-press eyedropper: timer + the pointer it belongs to. Fires
+   only while the pointer stays within a few px of where it landed. */
+var lpTimer=null, lpPointerId=null, lpDone=false;
+function isPalmEvent(e){
+  /* PointerEvent.width/height are the contact patch in CSS px: a
+     fingertip reads roughly 8–40, a resting palm far more */
+  return (e.width!=null && e.width>52) || (e.height!=null && e.height>52);
+}
+function noteTouchStrokeStart(){
+  touchStrokeRec={
+    undoLen:undoStack.length, redoCopy:redoStack.slice(), rev:projRev,
+    sel:sel, hadStroke:strokeInProgress(),
+    /* a float that exists NOW predates this stroke (rewind its drag
+       on rollback); a float that appears DURING the stroke was
+       lifted by it (cancel it on rollback) */
+    hadFloatMove:!!floatMove, hadFloatScale:!!floatScale,
+    floatGeom:floatMove? {dx:floatMove.dx, dy:floatMove.dy} : null,
+    scaleGeom:floatScale? {cx:floatScale.cx, cy:floatScale.cy, cw:floatScale.cw, ch:floatScale.ch} : null
+  };
+}
+function clearLongPress(){
+  if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; }
+  lpPointerId=null;
+}
+function armLongPress(e, p){
+  clearLongPress(); lpDone=false;
+  if(tool!=="pen" && tool!=="mirror" && tool!=="eraser") return;
+  lpPointerId=e.pointerId;
+  lpArm={x:e.clientX, y:e.clientY};
+  var cell={x:p.x, y:p.y};
+  lpTimer=setTimeout(function(){
+    lpTimer=null;
+    if(lpDone || touchGesture || touchPts.size>1) return;
+    if(!strokeInProgress()) return;
+    /* a press-and-hold is a colour pick, not a dot: roll the stroke
+       back first so the held dot does not stay behind either */
+    rollbackTouchStroke();
+    lpDone=true;
+    pickColor(cell.x, cell.y);
+  }, 550);
+}
+function noteLongPressMove(e){
+  if(!lpTimer || e.pointerId!==lpPointerId) return;
+  /* movement is tracked against the landing point via lastClient:
+     armLongPress stored it on the timer record below instead */
+  if(lpArm && Math.hypot(e.clientX-lpArm.x, e.clientY-lpArm.y)>14) clearLongPress();
+}
+var lpArm=null;
 /* The active two-finger gesture, or null: {fx, fy, d}.
    fx / fy are the canvas fraction (0..1 across the wrap) that sat
    under the fingers' midpoint when the gesture was anchored; that
@@ -3734,6 +3844,7 @@ function anchorGesture(){
   var gm=gestureMidD(pr);
   var wr=wrap.getBoundingClientRect();
   touchGesture={ fx:(gm.x-wr.left)/Math.max(1,wr.width), fy:(gm.y-wr.top)/Math.max(1,wr.height), d:Math.max(1,gm.d) };
+  if(tapTrack && tapTrack.mx==null){ tapTrack.mx=gm.x; tapTrack.my=gm.y; }
 }
 function startGesture(){
   cancelStrokeForGesture();
@@ -3755,6 +3866,8 @@ function applyGesture(){
   var gm=gestureMidD(pr);
   var gf=gm.d/touchGesture.d;
   touchGesture.d=Math.max(1,gm.d);
+  /* tap slop: a real pinch / pan disqualifies the tap commands */
+  if(tapTrack && (Math.abs(gf-1)>0.02 || (tapTrack.mx!=null && Math.hypot(gm.x-tapTrack.mx, gm.y-tapTrack.my)>12))) tapTrack.moved=true;
   if(Math.abs(gf-1)>0.0004) setZoom(stagePx*gf, true);
   /* glue: the anchored canvas fraction lands exactly on the
      fingers' current midpoint — zoom and pan in a single step */
@@ -3771,25 +3884,84 @@ function applyGesture(){
    not jump. If the pair changed under a third finger, re-anchor
    on the new pair so the view does not jump either. */
 function gesturePointerGone(){
+  if(touchPts.size===0){ onAllTouchesUp(); return; }
   if(!touchGesture) return;
   if(touchPts.size<2){ touchGesture=null; return; }
   anchorGesture();
 }
-function cancelStrokeForGesture(){
+/* Every finger has lifted: release the drawing lockout, and if the
+   whole contact sequence was a quick, still tap, run its command
+   (2 fingers = 戻す, 3 fingers = やり直し) instead of anything else. */
+function onAllTouchesUp(){
+  touchGesture=null;
+  touchLockout=false;
+  clearLongPress();
+  var tt=tapTrack; tapTrack=null; touchStrokeRec=null;
+  if(tt && !tt.moved && (Date.now()-tt.t0)<350){
+    if(tt.max===2 && undoStack.length) undo();
+    else if(tt.max===3 && redoStack.length) redo();
+  }
+}
+/* Roll the single-finger touch stroke back to EXACTLY where it was
+   before the finger landed: pixels restored from the snapshot the
+   stroke's own pushHistory recorded, the history entry itself
+   removed (redo stack put back too), the project revision rewound —
+   afterwards it is as if the stroke never happened. Floats the
+   stroke itself lifted are cancelled through their own cancel paths
+   (which restore from backups and never wrote history); a float
+   that already existed just has its drag position rewound. Used by
+   the gesture takeover AND by the long-press eyedropper. */
+function rollbackTouchStroke(){
+  var rec=touchStrokeRec;
+  var wasLineShape = drawing && (tool==="line"||tool==="shape");
   drawing=false; panDrag=null; pendingRight=null;
-  selMode=null; selStart=null; moveMode=null; moveBase=null; moveData=null;
-  scaleMode=null;
+  selMode=null; selStart=null; moveBase=null; moveData=null;
   drawFrameOverride=null; strokeFrame=null;
-  octx.clearRect(0,0,overC.width,overC.height);
   wrap.classList.remove("panning"); area.classList.remove("panning");
-  /* renderAll, not render: pixels the interrupted stroke had already
-     put down stay down, so the frame / layer thumbnails must catch up
-     NOW — a plain render() here left them showing the pre-stroke
-     picture until some unrelated operation forced a full refresh
-     (the "erased pixels still in the preview" bug) */
+  if(rec && floatMove && !rec.hadFloatMove){ cancelFloat(); }
+  else if(rec && floatScale && !rec.hadFloatScale){ cancelScale(); }
+  else {
+    if(floatMove && rec && rec.floatGeom){
+      floatMove.dx=rec.floatGeom.dx; floatMove.dy=rec.floatGeom.dy;
+      floatMove.baseDx=floatMove.dx; floatMove.baseDy=floatMove.dy;
+    }
+    if(floatScale && rec && rec.scaleGeom){
+      floatScale.cx=rec.scaleGeom.cx; floatScale.cy=rec.scaleGeom.cy;
+      floatScale.cw=rec.scaleGeom.cw; floatScale.ch=rec.scaleGeom.ch;
+    }
+    moveMode=null; scaleMode=null;
+    if(rec && undoStack.length>rec.undoLen){
+      /* pop EVERY entry the stroke pushed (drawing strokes push one;
+         the float commits push theirs at commit time, not mid-drag) */
+      var snap=null;
+      while(undoStack.length>rec.undoLen) snap=undoStack.pop();
+      redoStack.length=0;
+      rec.redoCopy.forEach(function(s){ redoStack.push(s); });
+      projRev=rec.rev;
+      /* line / shape strokes plot nothing until pointer-up — their
+         preview lives on the overlay canvas only, so restoring the
+         snapshot would be pure waste; the entry pop above is the
+         whole rollback for them */
+      if(snap && !wasLineShape){
+        var d=JSON.parse(snap);
+        W=d.w; H=d.h; frames=d.frames; frameGroups=d.fg||[];
+        curFrame=Math.min(d.cur, frames.length-1);
+        flatEpoch++;
+        normalizeLoaded(); syncCanvasSize(false);
+      }
+      syncUndoBtns(); updateSaveStatus();
+    }
+    if(rec) sel=rec.sel;
+  }
+  octx.clearRect(0,0,overC.width,overC.height);
   renderAll();
   if(floatMove) drawFloatOverlay();
   if(floatScale) drawScaleOverlay();
+}
+function cancelStrokeForGesture(){
+  clearLongPress();
+  touchLockout=true;
+  rollbackTouchStroke();
 }
 /* Safety net for the same bug class: if the window loses focus in the
    middle of a stroke, the pointerup that would end it (and refresh
@@ -3798,6 +3970,10 @@ function cancelStrokeForGesture(){
    stroke flag is on. Dropping the flags and forcing a full refresh
    on blur means the previews can never stay stale indefinitely. */
 window.addEventListener("blur",function(){
+  /* touch bookkeeping must not survive a focus loss either: a
+     gesture interrupted here would otherwise leave the drawing
+     lockout on forever */
+  touchPts.clear(); palmIds.clear(); touchGesture=null; touchLockout=false; tapTrack=null; touchStrokeRec=null; clearLongPress(); lpDone=false;
   if(!strokeInProgress() && !panDrag) return;
   drawing=false; panDrag=null; pendingRight=null;
   selMode=null; selStart=null; moveMode=null; moveBase=null; moveData=null;
@@ -3855,16 +4031,32 @@ wrap.addEventListener("mousedown",function(e){ if(e.button===1) e.preventDefault
 wrap.addEventListener("auxclick",function(e){ if(e.button===1) e.preventDefault(); });
 wrap.addEventListener("pointerdown",function(e){
   if(e.pointerType==="touch"){
+    /* palm rejection: a contact patch far bigger than a fingertip
+       is the heel of the hand resting on the glass — it is not a
+       drawing finger and must not join the gesture pair either */
+    if(isPalmEvent(e)){ palmIds.add(e.pointerId); e.preventDefault(); return; }
+    var firstFinger = touchPts.size===0;
     touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
-    if(touchPts.size===2 && !touchGesture){
-      startGesture();
+    if(firstFinger) tapTrack={max:1, t0:Date.now(), moved:false, mx:null, my:null};
+    else if(tapTrack) tapTrack.max=Math.max(tapTrack.max, touchPts.size);
+    if(touchPts.size>=2){
+      if(!touchGesture) startGesture();
       e.preventDefault();
       try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
       return;
     }
-    if(touchGesture){ e.preventDefault(); return; }
+    /* one finger only, but a gesture just ended and the other finger
+       has not lifted yet: drawing stays locked out until every
+       finger is up, so nothing can fire from the leftover contact */
+    if(touchGesture || touchLockout){ e.preventDefault(); return; }
+    /* remember the pre-stroke state: if a second finger turns this
+       into a pinch, the stroke is rolled back to exactly this */
+    noteTouchStrokeStart();
   }
   if(touchGesture) return;
+  /* the Pencil gets the same pre-stroke record, so the long-press
+     eyedropper can roll its held dot back too */
+  if(e.pointerType==="pen") noteTouchStrokeStart();
   if(e.button===1){
     e.preventDefault();
     wrap.setPointerCapture(e.pointerId);
@@ -4022,6 +4214,7 @@ wrap.addEventListener("pointerdown",function(e){
     toast("移動は、選択範囲の中か、色のあるマスからドラッグしてね");
     return;
   }
+  if(e.pointerType==="touch" || e.pointerType==="pen") armLongPress(e, p);
   pushHistory();
   drawing=true;
   if(effTool==="fill"){ floodFill(p.x,p.y, spaceGet(p.x,p.y), color); addRecent(color); renderAll(); drawing=false; return; }
@@ -4050,12 +4243,16 @@ wrap.addEventListener("pointermove",function(e){
     wrap.classList.add("panning");
   }
   lastClientX=e.clientX; lastClientY=e.clientY;
+  noteLongPressMove(e);
   if(panDrag){
     panX=panDrag.px+(e.clientX-panDrag.x);
     panY=panDrag.py+(e.clientY-panDrag.y);
     clampPan(); layoutWrap();
     return;
   }
+  /* after a long-press colour pick, the still-held finger must not
+     go on to draw when it finally moves */
+  if(lpDone) return;
   var p=eventPos(e);
   pointerShift=!!e.shiftKey;
   if(pendingRight){
@@ -4167,12 +4364,21 @@ function showCanvasCtx(cx, cy, x, y){
   showCtx(cx, cy, items);
 }
 function endStroke(e){
+  if(e && lpPointerId!=null && e.pointerId===lpPointerId){ lpDone=false; lpPointerId=null; lpArm=null; clearLongPress(); }
   if(e && e.pointerType==="touch"){
+    var wasPalmEnd=palmIds.delete(e.pointerId);
     touchPts.delete(e.pointerId);
+    if(touchPts.size===0) onAllTouchesUp();
+    if(wasPalmEnd) return;
     if(touchGesture){
       gesturePointerGone();
       return; /* the gesture owned this pointer: no stroke end, no menu */
     }
+    /* a finger left over from a finished gesture lifts: it never
+       owned a stroke (the gesture cancelled it), so there is
+       nothing to end — and it must not fall through to the menu /
+       commit paths below */
+    if(touchLockout) return;
   }
   strokeFrame=null;
   if(panDrag){
@@ -4356,10 +4562,14 @@ area.addEventListener("pointercancel",areaPanEnd);
    gesture), and a lone off-canvas finger simply does nothing. */
 area.addEventListener("pointerdown",function(e){
   if(e.pointerType!=="touch" || wrap.contains(e.target)) return;
+  if(isPalmEvent(e)){ palmIds.add(e.pointerId); e.preventDefault(); return; }
+  var firstOff = touchPts.size===0;
   touchPts.set(e.pointerId,{x:e.clientX, y:e.clientY});
+  if(firstOff) tapTrack={max:1, t0:Date.now(), moved:false, mx:null, my:null};
+  else if(tapTrack) tapTrack.max=Math.max(tapTrack.max, touchPts.size);
   e.preventDefault();
   try{ area.setPointerCapture(e.pointerId); }catch(_){}
-  if(touchPts.size===2 && !touchGesture){
+  if(touchPts.size>=2 && !touchGesture){
     startGesture();
   }
 });
@@ -4370,7 +4580,11 @@ area.addEventListener("pointermove",function(e){
 });
 function areaTouchEnd(e){
   if(e.pointerType!=="touch") return;
-  if(touchPts.delete(e.pointerId)) gesturePointerGone();
+  palmIds.delete(e.pointerId);
+  if(touchPts.delete(e.pointerId)){
+    if(touchPts.size===0) onAllTouchesUp();
+    else gesturePointerGone();
+  }
 }
 area.addEventListener("pointerup",areaTouchEnd);
 area.addEventListener("pointercancel",areaTouchEnd);
@@ -4394,6 +4608,10 @@ area.addEventListener("wheel",function(e){
 },{passive:false});
 area.addEventListener("gesturestart",function(e){ e.preventDefault(); });
 area.addEventListener("gesturechange",function(e){ e.preventDefault(); });
+/* a quick double-tap on the stage is a drawing gesture, never the
+   browser's double-tap zoom (the stage is touch-action:none already;
+   this closes the remaining desktop-class browser path) */
+area.addEventListener("dblclick",function(e){ e.preventDefault(); });
 
 /* selection action buttons */
 $("selAllBtn").addEventListener("click",function(){ setTool("select"); selectAll(); toast("全て選択しました"); });
@@ -4430,7 +4648,7 @@ $("selDelBtn").addEventListener("click",deletePixels);
 /* ============ tools UI ============ */
 var TOOLNAMES={pen:"ペン",eraser:"消しゴム",fill:"塗りつぶし",picker:"スポイト",line:"直線",shape:"図形",select:"範囲選択",replace:"色置き換え",move:"移動",scale:"拡大縮小",mirror:"ミラー",text:"文字",chip:"マップチップ"};
 var TOOLHELP={
-  pen:"クリック／ドラッグでドットを描きます。右クリックで消しゴム、Alt+クリックでスポイトになります。Shift+クリックで前の点から直線を引けます。",
+  pen:"クリック／ドラッグでドットを描きます。右クリックで消しゴム、Alt+クリックでスポイトになります。Shift+クリックで前の点から直線を引けます。タブレットでは、動かさずに長押しするとスポイトになります。",
   eraser:"ドットを透明に戻します。ブラシの太さが適用されます。",
   fill:"クリックしたマスと同じ色の、つながった範囲を今の色で塗りつぶします。",
   picker:"キャンバスの色を拾って「今の色」にします。",
@@ -5613,9 +5831,128 @@ function gifBlobNow(){
 function doGif(){ downloadBlob(gifBlobNow(), fileBase()+".gif"); }
 
 /* Original project format: ".ds" is already taken (Nintendo DS etc.), so the
-   studio's own format is ".dspx" (dot studio pixel). Content is JSON. */
+   studio's own format is ".dspx" (dot studio pixel). Content is JSON.
+   FORMAT v3 (this build): pixel data no longer sits in the JSON as one
+   "#rrggbb" string (or null) per cell — that made a picture whose PNG
+   is 16KB balloon to over 1MB. Each layer's cells are stored as
+   {p:[palette], w:1|2, m:"r"|"p", b:base64}:
+     p = the colours the layer actually uses, in first-use order;
+     the cell stream is palette indices (0 = transparent), packed at
+     w bytes per index, then either run-length encoded (m "r": value +
+     LEB128 count per run) or stored packed-raw (m "p") — whichever is
+     smaller wins — and base64'd. Flat pixel art collapses to a few
+     dozen runs per layer, so files land in the same size order as PNG.
+   v1/v2 files (plain data arrays) still load: expandPayload() detects
+   the representation per layer and restores plain arrays in memory,
+   and every save path writes v3, so old projects shrink the next
+   time they are saved anywhere (PC file AND browser storage). */
+function b64FromBytes(bytes){
+  var s="", CH=0x8000;
+  for(var i=0;i<bytes.length;i+=CH){
+    s+=String.fromCharCode.apply(null, bytes.subarray? bytes.subarray(i,i+CH) : bytes.slice(i,i+CH));
+  }
+  return btoa(s);
+}
+function bytesFromB64(b64){
+  var s=atob(b64||""), out=new Uint8Array(s.length);
+  for(var i=0;i<s.length;i++) out[i]=s.charCodeAt(i);
+  return out;
+}
+function pkWriteVarint(out, v){
+  v=v>>>0;
+  do{ var b=v&0x7f; v>>>=7; if(v) out.push(b|0x80); else out.push(b); }while(v);
+}
+function encodeLayerData(data){
+  var pal=[], pidx={};
+  for(var i=0;i<data.length;i++){
+    var c=data[i];
+    if(c && !(c in pidx)){ pidx[c]=pal.length; pal.push(c); }
+  }
+  if(!pal.length) return {p:[], w:1, m:"r", b:""};
+  var wdt = pal.length>254? 2 : 1;
+  var n=data.length;
+  var idx=new Uint16Array(n);
+  for(var j=0;j<n;j++) idx[j]=data[j]? pidx[data[j]]+1 : 0;
+  /* run-length form */
+  var rle=[];
+  var runV=idx[0], runC=1;
+  for(var k=1;k<=n;k++){
+    if(k<n && idx[k]===runV){ runC++; continue; }
+    if(wdt===2){ rle.push(runV&255, (runV>>8)&255); } else rle.push(runV);
+    pkWriteVarint(rle, runC);
+    if(k<n){ runV=idx[k]; runC=1; }
+  }
+  var rleB=b64FromBytes(new Uint8Array(rle));
+  /* packed-raw form */
+  var raw=new Uint8Array(n*wdt);
+  for(var m2=0;m2<n;m2++){ if(wdt===2){ raw[m2*2]=idx[m2]&255; raw[m2*2+1]=(idx[m2]>>8)&255; } else raw[m2]=idx[m2]; }
+  var rawB=b64FromBytes(raw);
+  return rawB.length<rleB.length? {p:pal, w:wdt, m:"p", b:rawB} : {p:pal, w:wdt, m:"r", b:rleB};
+}
+function decodeLayerData(pk, len){
+  var out=new Array(len);
+  for(var i=0;i<len;i++) out[i]=null;
+  if(!pk || !pk.p || !pk.p.length || !pk.b) return out;
+  var bytes=bytesFromB64(pk.b), wdt=pk.w===2? 2 : 1, pos=0, cell=0;
+  function readVal(){
+    if(wdt===2){ var v=bytes[pos]|(bytes[pos+1]<<8); pos+=2; return v; }
+    return bytes[pos++];
+  }
+  if(pk.m==="p"){
+    while(pos<bytes.length && cell<len){
+      var v2=readVal();
+      if(v2>0) out[cell]=pk.p[v2-1]||null;
+      cell++;
+    }
+    return out;
+  }
+  while(pos<bytes.length && cell<len){
+    var v3=readVal();
+    var cnt=0, shift=0, b;
+    do{ b=bytes[pos++]; cnt+=(b&0x7f)*Math.pow(2,shift); shift+=7; }while(b&0x80 && pos<bytes.length);
+    for(var r2=0;r2<cnt && cell<len;r2++){ if(v3>0) out[cell]=pk.p[v3-1]||null; cell++; }
+  }
+  return out;
+}
+function encodeNodesPayload(list){
+  return (list||[]).map(function(n){
+    var o={};
+    Object.keys(n).forEach(function(k){
+      if(k==="data" || k==="children" || k==="_bb" || k==="_bbD" || k==="_v") return;
+      o[k]=n[k];
+    });
+    if(n.type==="group") o.children=encodeNodesPayload(n.children||[]);
+    else if(n.type==="layer") o._pk=encodeLayerData(n.data||[]);
+    return o;
+  });
+}
+function encodePayload(src){
+  var frames2=(src.frames||[]).map(function(fr){
+    if(Array.isArray(fr)) return fr;
+    var o={};
+    Object.keys(fr).forEach(function(k){ if(k!=="layers") o[k]=fr[k]; });
+    o.layers=encodeNodesPayload(fr.layers||[]);
+    return o;
+  });
+  return {app:"dot-studio", format:"dspx", version:3, name:src.name, w:src.w, h:src.h||src.w, fps:src.fps||8, cols:src.cols||1, rows:src.rows||1, frames:frames2, frameGroups:src.frameGroups||[]};
+}
+function expandNodesPayload(list, len){
+  (list||[]).forEach(function(n){
+    if(!n || typeof n!=="object") return;
+    if(n.type==="group") expandNodesPayload(n.children||[], len);
+    else if(n.type==="layer" && n._pk){ n.data=decodeLayerData(n._pk, len); delete n._pk; }
+  });
+}
+/* Restore plain data arrays in a parsed payload (any version), in
+   place; returns the payload. Old payloads pass through untouched. */
+function expandPayload(d){
+  if(!d || !Array.isArray(d.frames)) return d;
+  var len=(d.w||0)*((d.h||d.w)||0);
+  if(len>0) d.frames.forEach(function(fr){ if(fr && !Array.isArray(fr)) expandNodesPayload(fr.layers||[], len); });
+  return d;
+}
 function projectPayload(){
-  return {app:"dot-studio", format:"dspx", version:2, name:projName, w:W, h:H, fps:fps, cols:expCols, rows:expRows, frames:frames, frameGroups:frameGroups};
+  return encodePayload({name:projName, w:W, h:H, fps:fps, cols:expCols, rows:expRows, frames:frames, frameGroups:frameGroups});
 }
 function doSaveProj(){
   var blob=new Blob([JSON.stringify(projectPayload())],{type:"application/octet-stream"});
@@ -5734,6 +6071,21 @@ function persistRecAnim(id, anim){
     }catch(_){}
   }
 }
+/* The animated hover thumbnail is a full GIF encode of every frame —
+   far too heavy to run inside every (auto)save on a tablet. It is
+   debounced to idle time after the last save and skipped entirely
+   if the user has since opened a different project. */
+var animThumbTimer=null;
+function scheduleAnimThumb(rec){
+  if(animThumbTimer) clearTimeout(animThumbTimer);
+  var id=rec.id;
+  animThumbTimer=setTimeout(function(){
+    animThumbTimer=null;
+    if(curProjId!==id) return;
+    var st=loadStore();
+    for(var i=0;i<st.length;i++) if(st[i].id===id){ makeAnimThumb(st[i]); return; }
+  }, 1200);
+}
 function saveToBrowser(silent){
   var store=loadStore();
   var now=new Date().toISOString();
@@ -5761,13 +6113,32 @@ function saveToBrowser(silent){
   quotaWarned=false;
   browserSavedRev=projRev; lastBrowserAt=now;
   settings.lastId=curProjId; saveSettings();
-  makeAnimThumb(rec);
+  scheduleAnimThumb(rec);
   updateSaveStatus();
   if(!silent) toast("ブラウザに保存しました（ホーム画面から開けます）");
   return true;
 }
 /* periodic browser auto-save; the interval / ON-OFF live in settings */
-var autoTimer=null;
+var autoTimer=null, autoSaveDeferred=false;
+/* An auto-save that comes due mid-stroke is postponed until the pen
+   is up: serializing a big project (plus its thumbnail) on the main
+   thread used to land on a drawing frame and visibly hitch the line
+   on tablets. The poll retires after ~16s regardless — the next
+   interval tick (or going home, or closing the tab) saves anyway. */
+function deferAutosave(){
+  var tries=0;
+  (function poll(){
+    if(!autoSaveDeferred) return;
+    tries++;
+    var busy = strokeInProgress() || panDrag || touchGesture || drawing || document.body.classList.contains("home-open");
+    if(!busy || tries>40){
+      autoSaveDeferred=false;
+      if(settings.auto && hasWorkToSave() && projRev!==browserSavedRev && !document.body.classList.contains("home-open")) saveToBrowser(true);
+      return;
+    }
+    setTimeout(poll, 400);
+  })();
+}
 function restartAutosave(){
   if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
   if(!settings.auto) return;
@@ -5775,6 +6146,10 @@ function restartAutosave(){
     if(document.body.classList.contains("home-open")) return;
     if(!hasWorkToSave()) return; /* never store the untouched starter */
     if(projRev===browserSavedRev) return; /* nothing new to save */
+    if(strokeInProgress() || panDrag || touchGesture || drawing){
+      if(!autoSaveDeferred){ autoSaveDeferred=true; deferAutosave(); }
+      return;
+    }
     saveToBrowser(true);
   }, Math.max(10, settings.interval|0)*1000);
 }
@@ -5782,6 +6157,7 @@ window.addEventListener("beforeunload",function(){
   if(settings.auto && hasWorkToSave() && projRev!==browserSavedRev) saveToBrowser(true);
 });
 function applyLoadedProject(d){
+  expandPayload(d); /* v3 files carry packed layers; restore plain arrays */
   pushHistory();
   W=d.w; H=d.h||d.w; frames=d.frames; frameGroups=d.frameGroups||[]; curFrame=0;
   fps=d.fps||8; sel=null;
@@ -5809,7 +6185,12 @@ function openStoredProject(rec){
 }
 function downloadStoredProject(rec){
   var name=(rec.name||"dot-art").replace(/[\\\/:*?"<>|]/g,"_")||"dot-art";
-  var blob=new Blob([JSON.stringify(rec.data)],{type:"application/octet-stream"});
+  /* always write the compact v3 form, even when the stored copy is an
+     older (plain-array) payload: expand a clone, then re-encode it */
+  var payload;
+  try{ payload=encodePayload(expandPayload(JSON.parse(JSON.stringify(rec.data)))); }
+  catch(_){ payload=rec.data; }
+  var blob=new Blob([JSON.stringify(payload)],{type:"application/octet-stream"});
   var a=document.createElement("a"); a.download=name+".dspx"; a.href=URL.createObjectURL(blob); a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
   var now=new Date().toISOString();
@@ -5823,6 +6204,8 @@ function downloadStoredProject(rec){
    the home list without opening them): raw layer compositing, no fx */
 function thumbFromData(d){
   try{
+    /* work on an expanded clone: a v3 payload's layers are packed */
+    d=expandPayload(JSON.parse(JSON.stringify(d)));
     var w=d.w, h=d.h||d.w, fr=d.frames && d.frames[0];
     if(!fr || !fr.layers) return null;
     var out=new Array(w*h);
@@ -6181,7 +6564,17 @@ $("homeSort").addEventListener("change",function(){ homeSortMode=this.value; ren
 $("homeBackupBtn").addEventListener("click",function(){
   var st=loadStore();
   if(!st.length){ toast("バックアップするプロジェクトがありません"); return; }
-  var blob=new Blob([JSON.stringify({app:"dot-studio", kind:"backup", version:1, exportedAt:new Date().toISOString(), projects:st})],{type:"application/json"});
+  /* each project's data is re-encoded to the compact v3 form so a
+     backup of old (plain-array) projects does not stay huge */
+  var packed=st.map(function(rec){
+    if(!rec || !rec.data || !rec.data.frames) return rec;
+    try{
+      var c=Object.assign({}, rec);
+      c.data=encodePayload(expandPayload(JSON.parse(JSON.stringify(rec.data))));
+      return c;
+    }catch(_){ return rec; }
+  });
+  var blob=new Blob([JSON.stringify({app:"dot-studio", kind:"backup", version:1, exportedAt:new Date().toISOString(), projects:packed})],{type:"application/json"});
   downloadBlob(blob, "dot-studio-backup.json");
 });
 $("homeRestoreBtn").addEventListener("click",function(){ $("homeRestoreFile").click(); });
@@ -6360,7 +6753,7 @@ $("mAccent").addEventListener("click",openAccent);
 /* ============ つかいかた (how-to slides, from the home screen) ===== */
 var HOW_SLIDES=[
   {t:"1. プロジェクトを作る", x:"ホーム画面の「＋ 新規プロジェクト」を押して、名前・キャンバスの大きさ・最初のフレーム数を決めて「作成する」を押します。プロジェクトは、このボタンを押したときだけ増えます。ホームのカードの「開く」から、いつでも続きを編集できます。"},
-  {t:"2. 描く", x:"左のツール（ペン・消しゴム・塗りつぶし・スポイト・直線・図形など）で中央のキャンバスに描きます。色は右側のパレットから選びます。キャンバスで右クリックすると専用メニューが開き、右ボタンのドラッグは消しゴムになります。タブレットでは1本指（とApple Pencil）が描画、2本指でつまむと拡大・縮小、2本指のまま動かすと移動できます。"},
+  {t:"2. 描く", x:"左のツール（ペン・消しゴム・塗りつぶし・スポイト・直線・図形など）で中央のキャンバスに描きます。色は右側のパレットから選びます。キャンバスで右クリックすると専用メニューが開き、右ボタンのドラッグは消しゴムになります。タブレットではApple Pencilが描画で、指は2本指ピンチ（拡大・縮小）や2本指ドラッグ（移動）などのジェスチャー優先です。ピンチのつもりで1本目が描いてしまっても、2本目を置いた瞬間に取り消されます。2本指タップで「戻す」、3本指タップで「やり直し」、ペンを動かさず長押しするとスポイトになります。"},
   {t:"3. レイヤーとフレーム", x:"レイヤーは「重ねる紙」です。左側のパネルで追加・複製・並べ替えができ、絵を部品ごとに分けて描けます。フレームはアニメのフレームで、下の帯で追加します。再生ボタンで動きを確認でき、レイヤーにもフレームにもエフェクトをかけられます。"},
   {t:"4. 保存のしかた（2種類）", x:"「ブラウザに保存」は、この端末のブラウザの中に保存する方法で、ホーム画面に並びます。自動保存もONにできます（保存の設定）。「PCに保存（.dspx）」はファイルとしてダウンロードする方法で、別の端末へ渡したりバックアップしたりできます。ホームのカードには、最新版がPCに保存済みかどうかが表示されます。"},
   {t:"5. 書き出し", x:"完成したら「書き出し」から PNG（今のフレーム）・スプライトシート・GIF（アニメ）・ZIP（フレーム一式）で書き出せます。拡大率や背景、シートの列・行も選べて、プレビューで確認しながら書き出せます。"},
@@ -6585,6 +6978,7 @@ $("jsonFile").addEventListener("change",function(e){
     try{
       var d=JSON.parse(r.result);
       if(!d.frames||!d.w) throw new Error("bad");
+      expandPayload(d); /* v3: unpack the packed layer data */
       pushHistory(); W=d.w; H=d.h||d.w; frames=d.frames; frameGroups=d.frameGroups||[]; curFrame=0; fps=d.fps||8; sel=null;
       if(typeof d.name==="string"){ projName=d.name; $("projName").value=d.name; }
       normalizeLoaded();
