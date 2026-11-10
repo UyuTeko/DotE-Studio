@@ -173,7 +173,7 @@ label{font-size:11px;color:var(--ink2);display:block;margin-bottom:3px}
 
 .frames-panel{flex:none;padding:8px 10px}
 .frames-row{display:flex;gap:8px;align-items:center}
-.frames-strip{display:flex;gap:7px;overflow-x:auto;padding:3px 2px;flex:1;min-width:0;scrollbar-width:thin}
+.frames-strip{display:flex;gap:7px;overflow-x:auto;padding:25px 2px 3px;flex:1;min-width:0;scrollbar-width:thin}
 .frame-item{flex:none;text-align:center}
 .frame-thumb{
   width:46px;height:46px;border:2px solid var(--line);padding:0;display:block;box-shadow:2px 2px 0 var(--line);position:relative;
@@ -348,10 +348,20 @@ textarea.uri-out{width:100%;background:var(--panel);border:2px solid var(--line)
 /* context-menu description line */
 .ctx-desc{font-size:12px;color:var(--ink2);padding:5px 9px;white-space:normal;max-width:250px;line-height:1.45}
 
-/* frame group chip in the frame strip */
-.fgroup-chip{flex:none;align-self:flex-start;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:54px;height:46px;padding:2px 7px;background:var(--panel2);border:2px dashed var(--line);box-shadow:2px 2px 0 var(--line);cursor:pointer;font-size:10px;line-height:1.3;text-align:center;user-select:none}
-.fgroup-chip .fg-name{font-size:11px;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fgroup-chip .fg-fx{background:var(--amber);border:1px solid var(--line);padding:0 3px;color:#26221c}
+/* frame groups: a slim bar ABOVE the group's frames (not a box at
+   their left). The strip always reserves the bar's slot as top
+   padding, so creating or dissolving a group never changes the
+   strip's height; the bar itself is positioned into that slot.
+   The ▼ is a real button, like a layer group's — easy to hit. */
+.fgroup-block{position:relative;display:flex;gap:7px;flex:none}
+.fgroup-block.is-collapsed{display:block;min-width:150px}
+.fgroup-bar{position:absolute;left:0;right:0;top:-23px;height:21px;display:flex;align-items:center;gap:5px;background:var(--panel2);border:2px solid var(--line);box-shadow:2px 2px 0 var(--line);padding:0 4px;font-size:10.5px;line-height:1.2;cursor:pointer;user-select:none;z-index:2}
+.fgroup-block.is-collapsed .fgroup-bar{position:static}
+.fgroup-bar.is-sel{outline:3px solid var(--accent);outline-offset:1px;background:var(--panel)}
+.fgroup-bar .fg-toggle{flex:none;width:26px;height:16px;display:grid;place-items:center;background:var(--panel);border:2px solid var(--line);font-size:9px;line-height:1;padding:0;color:var(--ink);cursor:pointer}
+.fgroup-bar .fg-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fgroup-bar .fg-count{color:var(--ink2);flex:none}
+.fgroup-bar .fg-fx{background:var(--amber);border:1px solid var(--line);padding:0 3px;color:#26221c}
 .frame-item .fr-fx{display:inline-block;background:var(--amber);border:1px solid var(--line);padding:0 3px;color:#26221c;font-size:9px;margin-left:3px}
 
 /* export dialog: settings left, preview right */
@@ -420,7 +430,6 @@ input[type="number"].fx-num{width:52px;flex:none;background:var(--panel);border:
 .ins-l::before,.ins-r::before{content:"";position:absolute;top:-3px;bottom:-3px;width:0;border-left:3px dashed var(--blue);z-index:8;pointer-events:none}
 .ins-l::before{left:-5px}
 .ins-r::before{right:-5px}
-.fgroup-chip.is-sel{outline:3px solid var(--accent);outline-offset:1px;background:var(--panel)}
 .fxp-row .fx-grip{cursor:grab;color:var(--ink2);font-size:13px;flex:none;padding:0 2px;user-select:none}
 
 /* centered dialogs can be dragged by their title bar */
@@ -454,6 +463,9 @@ body.home-open .topbar,body.home-open .workspace{display:none}
 .home-title{font-size:30px;line-height:1.15;margin:0}
 .home-sub{font-size:12.5px;color:var(--ink2);margin-top:3px}
 .home-actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;justify-content:flex-end;align-items:center}
+/* the two dropdown buttons on the home screen are .menu-btn, not
+   .px-btn, so the .px-btn :active press-in never reached them */
+.home-actions .menu-btn:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--line)}
 /* one tidy card holding search / sort / stats / storage meter */
 .home-bar{margin-top:22px;background:var(--panel);border:2px solid var(--line);box-shadow:var(--shadow-sm);padding:12px 14px}
 .home-sec-row{display:flex;align-items:baseline;gap:10px;margin:28px 0 12px}
@@ -585,7 +597,30 @@ body.home-open .topbar,body.home-open .workspace{display:none}
 .imp-slider span{flex:none;width:64px}
 .imp-slider input[type="range"]{flex:1;min-width:0}
 .imp-slider input[type="number"].fx-num{width:52px}
+/* canvas-size dialogs: one row per axis — label, a long 1–256
+   slider, and the synced number box */
+.size-slider{display:flex;align-items:center;gap:8px;margin:8px 0}
+.size-slider label{flex:none;width:1.4em;font-size:12px;color:var(--ink2)}
+.size-slider input[type="range"]{flex:1;min-width:0}
+.size-slider input[type="number"]{width:60px;flex:none}
 @media (max-width:640px){.imp-layout{flex-direction:column}.imp-side{width:100%}}
+
+/* new-project dialog: settings left, live preview right. The preview
+   box keeps a fixed stage; the inner canvas rectangle follows the
+   chosen size's aspect ratio and the chosen background, and it is
+   refreshed on every 'input' event (while the slider is still being
+   dragged, not only on release). */
+.np-layout{display:flex;gap:14px;align-items:flex-start}
+.np-main{flex:1;min-width:0}
+.np-side{width:172px;flex:none}
+.np-prev-box{border:2px solid var(--line);box-shadow:var(--shadow-sm);background:conic-gradient(var(--checker1) 0 25%, var(--checker2) 0 50%, var(--checker1) 0 75%, var(--checker2) 0);background-size:16px 16px;height:172px;display:flex;align-items:center;justify-content:center;padding:6px}
+.np-prev-canvas{border:2px solid var(--line);background:conic-gradient(var(--checker1) 0 25%, var(--checker2) 0 50%, var(--checker1) 0 75%, var(--checker2) 0);background-size:12px 12px;flex:none}
+@media (max-width:640px){.np-layout{flex-direction:column}.np-side{width:100%}}
+
+/* ウィンドウ → ツール設定ダイアログ OFF: every tool-option panel
+   (図形設定・選択範囲・拡大縮小・文字・マップチップ・色置き換え・
+   ミラー) stays hidden, whichever tool is selected */
+body.tool-dlgs-off #shapePanel.show,body.tool-dlgs-off #selPanel.show,body.tool-dlgs-off #mirrorPanel.show,body.tool-dlgs-off #repPanel.show,body.tool-dlgs-off #textPanel.show,body.tool-dlgs-off #scalePanel.show,body.tool-dlgs-off #chipPanel.show{display:none}
 
 @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
 
@@ -618,7 +653,7 @@ body{touch-action:manipulation}
   .frames-ctl .px-btn,.layer-bar .px-btn{min-height:38px}
   .used-item{min-height:38px}
   .used-item .u-to-rep{padding:6px 9px}
-  .fgroup-chip{min-height:52px}
+  .fgroup-bar .fg-toggle{width:32px;height:20px;font-size:11px}
   .ext-switch{width:52px;height:30px}
   .ext-switch i{width:20px;height:20px}
   .ext-switch[aria-checked="true"] i{left:26px}
@@ -712,6 +747,12 @@ body.layout-mobile .menus{flex-wrap:wrap;flex:1 1 auto;min-width:0}
 body.layout-mobile .menus .menu{display:block}
 body.layout-mobile .menu-btn{white-space:nowrap;padding:6px 8px}
 body.layout-mobile .menu-panel{max-height:calc(100dvh - 110px);overflow-y:auto}
+/* in the mobile layout the menu bar's dropdowns must paint ABOVE the
+   floating tool-option dialogs (z 64) and the colour / layer sheets
+   (z 66): the whole top bar (and the menus inside it) stacks higher.
+   Dialog backdrops (z 80), toasts (90) and context menus (130) still
+   sit above the bar, as they should. */
+body.layout-mobile .topbar{z-index:70}
 
 /* toasts float ABOVE the bottom bar (never covering 戻す / カラー /
    レイヤー) and slide down by their full height + the bottom offset
@@ -862,6 +903,9 @@ body.layout-mobile.tool-dlg-hidden .side:not(.side-right) .panel:not(#panelTools
         <button id="mSettings">保存の設定…</button>
         <button id="mSaveProj">PCに保存（.dspx）</button>
         <button id="mLoadProj">プロジェクトを開く…</button>
+        <div class="msep"></div>
+        <button id="mRenameProj">プロジェクト名の変更…</button>
+        <button id="mDeleteProj">このプロジェクトを削除…</button>
       </div>
     </div>
     <div class="menu" id="menuExport">
@@ -925,6 +969,8 @@ body.layout-mobile.tool-dlg-hidden .side:not(.side-right) .panel:not(#panelTools
         <button id="mZoomIn">ページを拡大</button>
         <div class="msep"></div>
         <button id="mLayoutMode">画面：PC</button>
+        <div class="msep"></div>
+        <button id="mImpFast">画像読み込み高速化：OFF</button>
       </div>
     </div>
     <div class="menu" id="menuWindow">
@@ -992,6 +1038,7 @@ body.layout-mobile.tool-dlg-hidden .side:not(.side-right) .panel:not(#panelTools
         </div>
         <button class="px-btn" id="homeHowBtn">つかいかた</button>
         <button class="px-btn" id="homeThemeBtn" title="ライトモード／ダークモードを切り替えます">テーマ：自動</button>
+        <button class="px-btn" id="homeLayoutBtn" title="PC画面とスマホ・タブレット画面を切り替えます（編集画面の「表示」メニューと同じ設定です）">画面：PC</button>
         <button class="px-btn" id="homeAccentBtn" hidden>テーマカラー</button>
         <button class="px-btn home-ext-btn" id="homeExtBtn" title="拡張機能の有効・無効を切り替えます">拡張機能</button>
         <div class="menu" id="menuHomeMore">
@@ -1319,8 +1366,9 @@ body.layout-mobile.tool-dlg-hidden .side:not(.side-right) .panel:not(#panelTools
 </div>
 
 <div class="exp-backdrop" id="sizeBackdrop" hidden>
-  <div class="panel exp-dialog" role="dialog" aria-label="キャンバスサイズ" style="width:min(360px,94vw)">
+  <div class="panel exp-dialog" role="dialog" aria-label="キャンバスサイズ" style="width:min(430px,94vw)">
     <h2>キャンバスサイズ</h2>
+    <p class="note" id="sizeSheetNote" hidden style="margin:0 0 8px">スプライトシート表示中です。ここで指定するのは「1フレーム」のサイズです。シート全体を1枚の絵として、その比率で拡大・縮小してから今の列×行でフレームに分け直します（絵はフレームをまたいで再分配されます）。</p>
     <div class="exp-row">
       <label>プリセット</label>
       <div class="mini-row" id="sizePresets">
@@ -1332,16 +1380,14 @@ body.layout-mobile.tool-dlg-hidden .side:not(.side-right) .panel:not(#panelTools
       </div>
     </div>
     <div class="exp-row">
-      <div class="mini-row">
-        <div style="flex:1"><label>横（1以上・上限なし）</label><input type="number" id="sizeW" min="1" value="32"></div>
-        <div style="flex:1"><label>縦（1以上・上限なし）</label><input type="number" id="sizeH" min="1" value="32"></div>
-      </div>
+      <div class="size-slider"><label for="sizeWRange">横</label><input type="range" id="sizeWRange" min="1" max="256" step="1" value="32" aria-label="横サイズ（スライダー）"><input type="number" id="sizeW" min="1" value="32" aria-label="横サイズ（数値）"></div>
+      <div class="size-slider"><label for="sizeHRange">縦</label><input type="range" id="sizeHRange" min="1" max="256" step="1" value="32" aria-label="縦サイズ（スライダー）"><input type="number" id="sizeH" min="1" value="32" aria-label="縦サイズ（数値）"></div>
     </div>
     <div class="mini-row mt">
       <button class="px-btn primary" id="sizeApplyBtn" style="flex:2">このサイズにする</button>
       <button class="px-btn" id="sizeCloseBtn">キャンセル</button>
     </div>
-    <p class="note">小さくすると、はみ出た部分は切り取られます。</p>
+    <p class="note" id="sizeNote">小さくすると、はみ出た部分は切り取られます。</p>
   </div>
 </div>
 
@@ -1550,6 +1596,9 @@ body.layout-mobile.tool-dlg-hidden .side:not(.side-right) .panel:not(#panelTools
         <div class="help-box"><h3>エフェクトの拡大縮小</h3><p>エフェクトにも「拡大縮小」があります（非破壊）。倍率と、拡縮の中心（左上・中央・右下など9方向）を指定できます。</p></div>
         <div class="help-box"><h3>data URIから読み込む</h3><p>「ファイル → data URIから読み込む…」で、画像の data URI を貼り付けて読み込めます（プロジェクトの data URI ならプロジェクトとして開きます）。ホーム画面の「読み込む」メニューからも、画像ファイルや data URI で新規プロジェクトを作れます。</p></div>
         <div class="help-box"><h3>ページ倍率（ブラウザズーム）</h3><p>「表示」メニューの「ページを拡大／縮小」で、キャンバスではなくページ全体の表示倍率を変えられます。「ページ倍率：○○%」で100%に戻ります。倍率は保存され、次回も維持されます。</p></div>
+        <div class="help-box"><h3>貼り付けは浮動します</h3><p>選択範囲をコピー／切り取りして貼り付けると、その場では上書きされず、移動ツールと同じ「浮いた」状態で置かれます。ドラッグで位置を調整し、別の場所をクリックすると確定、Escでキャンセルできます。</p></div>
+        <div class="help-box"><h3>画像読み込み高速化</h3><p>「表示」メニューの「画像読み込み高速化」をONにすると、大きな画像を読み込むときに段階的に縮小してから処理するので、固まりにくくなります。縮小のされ方が少し変わるため、初期設定はOFF（従来の処理）です。</p></div>
+        <div class="help-box"><h3>拡張機能「限界突破」</h3><p>ONの間、エフェクトなどのスライダー横の数値ボックスに、スライダーの上限を超えた値（下限未満も）をそのまま入力できます。範囲を超えた値を入れると、そのスライダーの可動範囲がその値まで広がります。広がった範囲はプロジェクトを閉じると初期範囲に戻ります。</p></div>
         <div class="help-box"><h3>画面レイアウト（PC／スマホ・タブレット）</h3><p>「表示」メニューの「画面」で、PC画面とスマホ・タブレット画面を切り替えられます。スマホ・タブレット画面では、左端のツールレール、下部のバー（戻す／やり直し／カラー／フレーム／レイヤー）を使い、レイヤーやカラーは重ねて開くパネルになります。最初の既定は端末に合わせて自動で選ばれ、切り替えると保存されます。</p></div>
     </div>
     <div class="mini-row mt">
@@ -1589,17 +1638,17 @@ body.layout-mobile.tool-dlg-hidden .side:not(.side-right) .panel:not(#panelTools
 </div>
 
 <div class="exp-backdrop" id="newBackdrop" hidden>
-  <div class="panel exp-dialog" role="dialog" aria-label="新規プロジェクト" style="width:min(400px,94vw)">
+  <div class="panel exp-dialog" role="dialog" aria-label="新規プロジェクト" style="width:min(620px,96vw)">
     <h2>新規プロジェクト</h2>
+    <div class="np-layout">
+    <div class="np-main">
     <div class="exp-row">
       <label>プロジェクト名</label>
       <input type="text" id="npName" value="ドット絵" spellcheck="false">
     </div>
     <div class="exp-row">
-      <div class="mini-row">
-        <div style="flex:1"><label>横サイズ（1以上）</label><input type="number" id="npW" min="1" value="32"></div>
-        <div style="flex:1"><label>縦サイズ（1以上）</label><input type="number" id="npH" min="1" value="32"></div>
-      </div>
+      <div class="size-slider"><label for="npWRange">横</label><input type="range" id="npWRange" min="1" max="256" step="1" value="32" aria-label="横サイズ（スライダー）"><input type="number" id="npW" min="1" value="32" aria-label="横サイズ（数値）"></div>
+      <div class="size-slider"><label for="npHRange">縦</label><input type="range" id="npHRange" min="1" max="256" step="1" value="32" aria-label="縦サイズ（スライダー）"><input type="number" id="npH" min="1" value="32" aria-label="縦サイズ（数値）"></div>
     </div>
     <div class="exp-row">
       <label>背景</label>
@@ -1619,6 +1668,13 @@ body.layout-mobile.tool-dlg-hidden .side:not(.side-right) .panel:not(#panelTools
     </div>
     <div class="exp-row" id="npHfpRow">
       <button class="px-btn teal" id="npHfpBtn" hidden style="width:100%">HackforPlayのキャラで始める…</button>
+    </div>
+    </div>
+    <div class="np-side">
+      <label>プレビュー</label>
+      <div class="np-prev-box"><div class="np-prev-canvas" id="npPrevCanvas" style="width:96px;height:96px"></div></div>
+      <p class="note" id="npPrevInfo">—</p>
+    </div>
     </div>
     <div class="mini-row mt">
       <button class="px-btn primary" id="npGoBtn" style="flex:2">作成する</button>
@@ -2150,8 +2206,9 @@ $("toolHelpBackdrop").addEventListener("click",function(e){ if(e.target===this) 
 /* ============ ウィンドウ menu: show / hide the app's panels ============
    Each entry toggles one panel element; a ✓ marks the ones currently
    shown. The choice is kept in settings, so it survives reloads.
-   (The tool-option panels — 図形設定・選択範囲など — are NOT listed:
-   they follow the selected tool, as before.) */
+   (The tool-option panels — 図形設定・選択範囲など — follow the
+   selected tool as before, but share one show / hide entry of
+   their own at the bottom of this menu.) */
 var PANEL_DEFS=[
   {key:"tools",   label:"ツール",       id:"panelTools"},
   {key:"layers",  label:"レイヤー",     id:"panelLayers"},
@@ -2171,6 +2228,9 @@ function applyPanelVis(){
     var el=$(d.id); if(!el) return;
     el.style.display=panelVisible(d.key)? "" : "none";
   });
+  /* the tool-option dialogs follow their own switch (see the
+     ウィンドウ menu entry below) */
+  document.body.classList.toggle("tool-dlgs-off", !!(typeof settings!=="undefined" && settings && settings.toolDlgHidden));
 }
 function buildWindowMenu(){
   var box=$("windowPanel"); if(!box) return;
@@ -2191,6 +2251,26 @@ function buildWindowMenu(){
     });
     box.appendChild(b);
   });
+  /* the tool-option dialogs (図形設定・選択範囲・拡大縮小など —
+     the panels that appear when a tool is picked) get one shared
+     show / hide switch here */
+  var sep=document.createElement("div"); sep.className="msep"; box.appendChild(sep);
+  var tb=document.createElement("button");
+  var tck=document.createElement("span"); tck.className="win-check";
+  var tdShown=!(typeof settings!=="undefined" && settings && settings.toolDlgHidden);
+  tck.textContent=tdShown? "✓" : "";
+  tb.appendChild(tck);
+  tb.appendChild(document.createTextNode("ツール設定ダイアログ"));
+  tb.title="図形設定など、ツールを選んだときに出る設定パネル全体の表示・非表示";
+  tb.addEventListener("click",function(){
+    settings.toolDlgHidden=!settings.toolDlgHidden;
+    saveSettings();
+    applyPanelVis();
+    buildWindowMenu();
+    document.querySelectorAll(".menu").forEach(function(x){x.classList.remove("open")});
+    toast(settings.toolDlgHidden? "ツール設定ダイアログを隠しました" : "ツール設定ダイアログを表示します");
+  });
+  box.appendChild(tb);
 }
 buildWindowMenu();
 applyPanelVis();
@@ -2308,6 +2388,85 @@ document.addEventListener("contextmenu",function(e){
 /* ============ history ============ */
 function snapshot(){ return JSON.stringify({w:W,h:H,frames:frames,cur:curFrame,fg:frameGroups,c:expCols,r:expRows}); }
 function pushHistory(){ undoStack.push(snapshot()); if(undoStack.length>90) undoStack.shift(); redoStack.length=0; syncUndoBtns(); markEdit(); flatEpoch++; /* any discrete edit invalidates cached flattens */ }
+/* ============ per-project history ============
+   Undo / redo must never cross a project boundary: each project
+   owns its stacks. Switching projects stashes the live stacks
+   under the outgoing project's key and restores the incoming
+   project's own (empty the first time), so Ctrl+Z in project B
+   can never resurrect project A's canvas, and coming back to A
+   still finds A's history intact. Stored projects key by their
+   store id; anything created or loaded fresh (new project, .dspx
+   file, project data URI, image-as-project, HackforPlay
+   character) gets a unique key nobody else can reach. Loading a
+   project is NOT itself a history entry — the loaders used to
+   pushHistory() before swapping the canvas, which is exactly
+   what let undo hop between projects. */
+var histKey="boot", histSeq=0, histStore={};
+function freshHistKey(){ histSeq++; return "u"+histSeq+"-"+Date.now().toString(36); }
+function switchHistContext(key){
+  if(!key || key===histKey) return;
+  histStore[histKey]={u:undoStack, r:redoStack};
+  histKey=key;
+  var s=histStore[key];
+  undoStack=s? s.u : [];
+  redoStack=s? s.r : [];
+  syncUndoBtns();
+  /* keep the stash bounded: histories of projects the user has long
+     stopped visiting are dropped rather than held forever */
+  var keys=Object.keys(histStore);
+  if(keys.length>14){
+    for(var i=0;i<keys.length && Object.keys(histStore).length>14;i++){
+      if(keys[i]!==histKey) delete histStore[keys[i]];
+    }
+  }
+}
+function dropHistContext(key){ if(key && key!==histKey) delete histStore[key]; }
+/* The live project earns a permanent key (its store id) after
+   having started under a throwaway one: move its history —
+   the live stacks simply continue under the new key. */
+function rekeyHistContext(newKey){
+  if(!newKey || newKey===histKey) return;
+  histStore[newKey]={u:undoStack, r:redoStack};
+  if(histStore[histKey] && histStore[histKey].u===undoStack) delete histStore[histKey];
+  histKey=newKey;
+}
+/* ============ project isolation ============
+   Switching projects must leave NOTHING of the outgoing project
+   behind in the editor. Every entry path (新規プロジェクト, 開く,
+   ファイル / data URI, 画像→新規プロジェクト, シート読み込み,
+   HackforPlay) funnels through resetEditorState() BEFORE the new
+   project's data lands:
+   - in-flight editing state that points at the old pixels
+     (floating move / scale, selection, gesture bookkeeping) is
+     dropped outright — never committed into the new project;
+   - the frame-strip / layer-list "light repaint" caches are keyed
+     by structural signatures that can coincide across projects
+     (fresh projects reuse the same layer ids from 1), so the
+     signature epoch is bumped: the next render rebuilds both lists
+     from the incoming project's own objects, and the painters that
+     referenced the OLD project's layer nodes are discarded;
+   - the used-colour cache (keyed by data array identity) is reset;
+   - slider ranges widened by the 限界突破 extension return to
+     their base spans (they are per-project by design).
+   The pixel caches proper (flatCache / nodeCache / rasterCache)
+   are WeakMaps keyed by the frame / node objects themselves, so
+   the old project's entries become unreachable the moment its
+   frames are replaced — they can never be served for the new
+   project's different objects. */
+var projectEpoch=0;
+function resetEditorState(){
+  projectEpoch++;
+  floatMove=null; floatScale=null;
+  moveMode=null; scaleMode=null; drawing=false;
+  sel=null; selMode=null; selStart=null; selRegion=null; prevSel=null; selOrig=null;
+  selFGroupId=null; drawFrameOverride=null; strokeFrame=null; sheetFrameAt=null;
+  hoverFrameIdx=null; hoverCell=null; pendingRight=null; uiFocus="canvas";
+  previewIdx=0; dragFrameIdx=null; dragLayerId=null;
+  thumbSig=""; thumbPainters=[]; layerSig=""; layerPainters=[];
+  usedCache={data:null, fx:null, col:null};
+  octx.clearRect(0,0,overC.width,overC.height);
+  resetLimitRanges();
+}
 /* every edit bumps the project revision; the save-status display and
    the home badges compare it against the revisions captured when the
    project was last written to the PC / to the browser */
@@ -2763,7 +2922,11 @@ function applyOneFx(data, inst){
   }
   if(inst.id==="outline"){
     var occ=data.slice(); out=data.slice();
-    for(var r=0;r<p.outlineSize;r++){
+    /* the growth saturates once the whole canvas is covered; the
+       pass count is capped so a limit-broken 太さ cannot loop
+       forever (the stored value itself is untouched) */
+    var oPasses=Math.max(0, Math.min(64, p.outlineSize||0));
+    for(var r=0;r<oPasses;r++){
       var grown=occ.slice();
       for(y=0;y<H;y++) for(x=0;x<W;x++){
         if(occ[y*W+x]) continue;
@@ -2780,14 +2943,17 @@ function applyOneFx(data, inst){
   }
   if(inst.id==="blur"){
     out=data;
-    for(var b2=0;b2<Math.max(1,p.blurAmt);b2++) out=blurData(out);
+    /* capped passes (see outline): past ~16 the picture is fully
+       blurred anyway, and an unbounded count would hang the tab */
+    var bPasses=Math.min(16, Math.max(1, p.blurAmt||1));
+    for(var b2=0;b2<bPasses;b2++) out=blurData(out);
     return out;
   }
   if(inst.id==="scale"){
     /* nearest-neighbour resample of the whole frame around an anchor
        point (one of 9 positions): the anchor cell stays put, the rest
        of the picture grows / shrinks away from it */
-    var sc=Math.max(10, Math.min(400, p.scalePct||100))/100;
+    var sc=Math.max(1, Math.min(1600, p.scalePct||100))/100;
     if(sc===1) return data;
     var anch={tl:[0,0], tc:[.5,0], tr:[1,0], cl:[0,.5], c:[.5,.5], cr:[1,.5], bl:[0,1], bc:[.5,1], br:[1,1]}[p.scaleAnchor] || [.5,.5];
     var axp=anch[0]*(W-1), ayp=anch[1]*(H-1);
@@ -2903,6 +3069,10 @@ function compositeListA(list, useFx){
       sb=(useFx && fxActive(n.fx))? {x0:0, y0:0, x1:W-1, y1:H-1} : layerBox(n);
     }
     var op=(n.opacity==null?1:n.opacity);
+    /* a limit-broken opacity may be stored outside 0–1: the blend
+       math below is only defined inside it, so the effective value
+       is clamped here (the stored value is untouched) */
+    op=Math.max(0, Math.min(1, op));
     if(op<=0) continue;
     if(sb){
       for(var yy=sb.y0; yy<=sb.y1; yy++){
@@ -3052,6 +3222,7 @@ function flattenFrameACompute(fi, useFx){
        visibly changes the result (it used to be stored but ignored) */
     var op=(fr.opacity==null?1:fr.opacity);
     if(g) op*=(g.opacity==null?1:g.opacity);
+    op=Math.max(0, op); /* a limit-broken negative opacity must not produce negative alpha */
     if(op<1){
       if(!res.alpha){ res.alpha=new Float32Array(W*H); for(var i=0;i<res.alpha.length;i++) res.alpha[i]=res.data[i]?1:0; }
       for(var j=0;j<res.alpha.length;j++) res.alpha[j]*=op;
@@ -3247,26 +3418,40 @@ function frameItem(i){
   item.appendChild(btn); item.appendChild(num);
   return item;
 }
-function fgroupChip(g, count){
-  var d=document.createElement("div"); d.className="fgroup-chip"+(selFGroupId===g.id?" is-sel":"");
-  d.title=g.name+"（"+count+"フレーム）クリックで選択／左端の矢印で開閉／右クリックでメニュー／フレームをドロップで加入";
-  var nm=document.createElement("span"); nm.className="fg-name";
-  var tg=document.createElement("span"); tg.textContent=g.collapsed?"▶ ":"▼ "; tg.title=g.collapsed?"開く":"畳む";
+/* A frame group renders as a BLOCK: a slim bar across the TOP of
+   its frames (the strip's reserved top slot — see .frames-strip's
+   padding) plus the frames themselves in a row under it. The ▼ is
+   a real button, the same control a layer group uses, instead of
+   a text glyph fused into the name. Clicking the bar selects the
+   group; right-click opens its menu; dropping a frame on the bar
+   joins the group — all as before. */
+function fgroupBlock(g, i0, i1){
+  var count=i1-i0;
+  var block=document.createElement("div");
+  block.className="fgroup-block"+(g.collapsed? " is-collapsed":"");
+  var bar=document.createElement("div");
+  bar.className="fgroup-bar"+(selFGroupId===g.id?" is-sel":"");
+  bar.title=g.name+"（"+count+"フレーム）クリックで選択／右クリックでメニュー／フレームをドロップで加入";
+  var tg=document.createElement("button");
+  tg.type="button"; tg.className="fg-toggle";
+  tg.textContent=g.collapsed? "▶" : "▼";
+  tg.title=g.collapsed? "開く" : "畳む";
+  tg.setAttribute("aria-label", g.collapsed? "グループ「"+g.name+"」を開く" : "グループ「"+g.name+"」を畳む");
   tg.addEventListener("click",function(e){ e.stopPropagation(); g.collapsed=!g.collapsed; renderThumbs(); });
-  nm.appendChild(tg); nm.appendChild(document.createTextNode(g.name));
-  var ct=document.createElement("span"); ct.textContent=count+"枚";
-  d.appendChild(nm); d.appendChild(ct);
-  if(fxActive(g.fx)){ var f=document.createElement("span"); f.className="fg-fx"; f.textContent="fx"; d.appendChild(f); }
-  /* clicking a frame group selects it, just like a layer group */
-  d.addEventListener("click",function(){
+  var nm=document.createElement("span"); nm.className="fg-name"; nm.textContent=g.name;
+  var ct=document.createElement("span"); ct.className="fg-count"; ct.textContent=count+"枚";
+  bar.appendChild(tg); bar.appendChild(nm); bar.appendChild(ct);
+  if(fxActive(g.fx)){ var f=document.createElement("span"); f.className="fg-fx"; f.textContent="fx"; bar.appendChild(f); }
+  /* clicking the bar selects the group, just like a layer group */
+  bar.addEventListener("click",function(){
     selFGroupId = selFGroupId===g.id? null : g.id;
     renderThumbs();
     if(selFGroupId) toast("フレームグループ「"+g.name+"」を選択しました（「フレームのエフェクト…」でこのグループにかけられます）");
   });
-  d.addEventListener("dragover",function(e){ if(dragFrameIdx==null) return; e.preventDefault(); d.classList.add("ins-b"); });
-  d.addEventListener("dragleave",function(){ d.classList.remove("ins-b"); });
-  d.addEventListener("drop",function(e){
-    e.preventDefault(); d.classList.remove("ins-b");
+  bar.addEventListener("dragover",function(e){ if(dragFrameIdx==null) return; e.preventDefault(); bar.classList.add("ins-b"); });
+  bar.addEventListener("dragleave",function(){ bar.classList.remove("ins-b"); });
+  bar.addEventListener("drop",function(e){
+    e.preventDefault(); bar.classList.remove("ins-b");
     if(dragFrameIdx==null) return;
     pushHistory();
     var mv=frames.splice(dragFrameIdx,1)[0];
@@ -3277,7 +3462,7 @@ function fgroupChip(g, count){
     curFrame=last+1; dragFrameIdx=null;
     renderAll(); toast("グループ「"+g.name+"」にフレームを入れました");
   });
-  d.addEventListener("contextmenu",function(e){
+  bar.addEventListener("contextmenu",function(e){
     e.preventDefault();
     showCtx(e.clientX, e.clientY, [
       {label:"エフェクトを追加・編集…", fn:function(){ openFx({kind:"fgroup", gid:g.id}); }},
@@ -3287,7 +3472,9 @@ function fgroupChip(g, count){
       {label:"グループを解散", fn:function(){ dissolveFGroup(g.id); }}
     ]);
   });
-  return d;
+  block.appendChild(bar);
+  if(!g.collapsed){ for(var k=i0;k<i1;k++) block.appendChild(frameItem(k)); }
+  return block;
 }
 function createFGroupAt(i){
   pushHistory();
@@ -3314,7 +3501,7 @@ function renderThumbs(){
      groups and collapse states), only the thumbnail canvases are
      repainted in place — rebuilding the whole strip's DOM on every
      render was a steady cost on multi-frame projects. */
-  var sig=frames.length+"|"+W+"x"+H+"|"+frames.map(function(f){ return f.gid||0; }).join(",")+"|"+frameGroups.map(function(g){ return g.id+":"+(g.collapsed?1:0); }).join(",");
+  var sig=projectEpoch+"#"+frames.length+"|"+W+"x"+H+"|"+frames.map(function(f){ return f.gid||0; }).join(",")+"|"+frameGroups.map(function(g){ return g.id+":"+(g.collapsed?1:0); }).join(",");
   if(sig===thumbSig && thumbPainters.length){
     thumbPainters.forEach(function(tp){
       var r=flattenFrameA(tp.fi, true);
@@ -3332,8 +3519,7 @@ function renderThumbs(){
     if(g){
       var j=i;
       while(j<frames.length && frames[j].gid===g.id) j++;
-      strip.appendChild(fgroupChip(g, j-i));
-      if(!g.collapsed){ for(var k=i;k<j;k++) strip.appendChild(frameItem(k)); }
+      strip.appendChild(fgroupBlock(g, i, j));
       i=j;
     } else {
       strip.appendChild(frameItem(i));
@@ -3413,7 +3599,7 @@ function restartPreview(){
   previewTimer=setInterval(function(){
     if(!playing || frames.length<2){ return; }
     previewIdx=(previewIdx+1)%frames.length; renderPreviewFrame(previewIdx);
-  }, 1000/Math.max(1,fps));
+  }, Math.max(16, 1000/Math.max(1,fps))); /* floored: a limit-broken FPS value must not spin the timer */
 }
 
 /* ============ drawing primitives ============ */
@@ -3764,7 +3950,7 @@ function cancelFloat(){
   if(fm.origSel.mask) sel.mask=fm.origSel.mask;
   octx.clearRect(0,0,overC.width,overC.height);
   renderAll();
-  toast("移動をキャンセルしました");
+  toast(fm.kind==="paste"? "貼り付けをキャンセルしました" : "移動をキャンセルしました");
 }
 
 /* ============ floating scale (scale tool) ============
@@ -5019,17 +5205,33 @@ function cutPixels(){
   if(!sel){ toast("先に範囲を選択してね"); return; }
   clipboard=extractRegion(sel); pushHistory(); clearRegion(sel); renderAll(); toast("切り取りました");
 }
+/* Paste FLOATS, exactly like the move tool: the copied cells are
+   placed as a floating object that overwrites nothing underneath.
+   The user drags it into place (or nudges with the arrow keys),
+   clicks elsewhere to land it, and Esc cancels — the canvas under
+   it was never touched, so cancelling is a pure discard (no pixel
+   backups are needed, unlike a move, whose source was lifted out).
+   Committing writes the cells through spaceSet and pushes the
+   pre-paste snapshot as the single undo step. */
+function startPasteFloat(){
+  if(floatMove) commitFloat();
+  if(floatScale) commitScale();
+  var ox=sel? Math.max(0,sel.x0):0, oy=sel? Math.max(0,sel.y0):0;
+  floatMove={
+    kind:"paste",
+    region:{w:clipboard.w, h:clipboard.h, cells:clipboard.cells.slice()},
+    origSel:{x0:ox, y0:oy, x1:ox+clipboard.w-1, y1:oy+clipboard.h-1, mask:null},
+    dx:0, dy:0, baseDx:0, baseDy:0, grabDX:0, grabDY:0,
+    dup:true, snap:snapshot(), backups:null, layerRef:null, layerBackup:null, hinted:true
+  };
+  moveMode=null; drawing=false;
+  setTool("move");
+  syncFloatSel(); render();
+}
 function pastePixels(){
   if(!clipboard){ toast("先にコピーか切り取りをしてね"); return; }
-  pushHistory();
-  var sd=spaceDims();
-  var ox=sel? Math.max(0,sel.x0):0, oy=sel? Math.max(0,sel.y0):0;
-  for(var ry=0;ry<clipboard.h;ry++) for(var rx=0;rx<clipboard.w;rx++){
-    var v=clipboard.cells[ry*clipboard.w+rx];
-    if(v) spaceSet(ox+rx,oy+ry,v);
-  }
-  sel={x0:ox,y0:oy,x1:Math.min(sd.w-1,ox+clipboard.w-1),y1:Math.min(sd.h-1,oy+clipboard.h-1)};
-  setTool("select"); renderAll(); toast("貼り付けました");
+  startPasteFloat();
+  toast("貼り付けました（浮動中）：ドラッグで位置を調整、クリックで確定、Escでキャンセル");
 }
 function deletePixels(){
   if(!sel){ toast("先に範囲を選択してね"); return; }
@@ -5259,20 +5461,46 @@ $("repAllBtn").addEventListener("click",function(){ doReplace(true); });
    project's size, sprite-sheet columns/rows, view mode, fps and
    background are never carried over. */
 var npBg="transp";
+/* The dialog's live preview: the inner rectangle takes the chosen
+   size's aspect ratio (fitted into the preview stage) and the
+   chosen background (checker for transparent, the picked colour
+   otherwise), and the caption spells out size / frames / sheet.
+   It is refreshed from the controls' 'input' events, so it tracks
+   the sliders WHILE they are dragged, not only on release. */
+function updateNpPreview(){
+  var box=$("npPrevCanvas"); if(!box) return;
+  var w=parseInt($("npW").value,10), h=parseInt($("npH").value,10);
+  w=isNaN(w)? 1 : Math.max(1, w); h=isNaN(h)? 1 : Math.max(1, h);
+  var s=Math.min(156/w, 156/h);
+  box.style.width=Math.max(2, Math.round(w*s))+"px";
+  box.style.height=Math.max(2, Math.round(h*s))+"px";
+  box.style.background = npBg==="color"
+    ? $("npBgColor").value
+    : "conic-gradient(var(--checker1) 0 25%, var(--checker2) 0 50%, var(--checker1) 0 75%, var(--checker2) 0)";
+  box.style.backgroundSize = npBg==="color"? "auto" : "12px 12px";
+  var nf=parseInt($("npFrames").value,10); nf=isNaN(nf)? 1 : Math.max(1, Math.min(64, nf));
+  var nc=parseInt($("npCols").value,10); nc=isNaN(nc)? 1 : Math.max(1, Math.min(64, nc));
+  var nr=parseInt($("npRows").value,10); nr=isNaN(nr)? 1 : Math.max(1, Math.min(64, nr));
+  $("npPrevInfo").textContent=w+" × "+h+" px ・ "+nf+" フレーム ・ 背景："+(npBg==="color"? "色で塗る" : "透明")
+    +" ・ シート "+nc+" 列 × "+nr+" 行（全体 "+(w*nc)+" × "+(h*nr)+"）";
+}
 function openNewDialog(){
   /* save the outgoing project first (when auto-save is on) so switching
      projects never loses work — but never materialise the untouched
      blank starter as a stored project */
   if(settings.auto && hasWorkToSave() && !document.body.classList.contains("home-open")) saveToBrowser(true);
   $("npName").value="ドット絵";
-  $("npW").value=32; $("npH").value=32; $("npFrames").value=1;
+  $("npW").value=32; $("npH").value=32; $("npWRange").value=32; $("npHRange").value=32; $("npFrames").value=1;
   $("npCols").value=1; $("npRows").value=1;
   npBg="transp"; setSeg("npBgSeg","v","transp");
   $("npBgColor").value="#ffffff"; $("npBgColor").style.display="none";
+  updateNpPreview();
   $("newBackdrop").hidden=false;
 }
 function closeNewDialog(){ $("newBackdrop").hidden=true; }
-segWire("npBgSeg","v",function(v){ npBg=v; $("npBgColor").style.display=(v==="color")? "" : "none"; });
+segWire("npBgSeg","v",function(v){ npBg=v; $("npBgColor").style.display=(v==="color")? "" : "none"; updateNpPreview(); });
+$("npBgColor").addEventListener("input",updateNpPreview);
+["npFrames","npCols","npRows"].forEach(function(id){ $(id).addEventListener("input",updateNpPreview); });
 $("npCancelBtn").addEventListener("click",closeNewDialog);
 $("newBackdrop").addEventListener("click",function(e){ if(e.target===this) closeNewDialog(); });
 $("npGoBtn").addEventListener("click",function(){
@@ -5288,6 +5516,8 @@ $("npGoBtn").addEventListener("click",function(){
   var bgc=(npBg==="color")? $("npBgColor").value : null;
   closeNewDialog();
   hideHome();
+  switchHistContext(freshHistKey()); /* a new project starts with its own empty history */
+  resetEditorState(); /* nothing of the previous project survives the switch */
   W=nw; H=nh;
   frames=[]; frameGroups=[]; selFGroupId=null;
   for(var i=0;i<nf;i++){
@@ -5330,45 +5560,200 @@ function resizeData(data, oldW, oldH){
   for(var y=0;y<Math.min(H,oldH);y++) for(var x=0;x<Math.min(W,oldW);x++) nf[idx(x,y)]=data[y*oldW+x];
   return nf;
 }
-function applyCanvasSize(nw, nh){
-  if(nw===W && nh===H) return;
-  pushHistory();
+/* The data half of a canvas resize (crop / pad every layer to the
+   new size), shared by the committed resize and the size dialog's
+   live preview. Every written layer is announced, so the change
+   shows immediately (see announceLayerWrite). */
+function resizeFramesData(nw, nh){
   var oldW=W, oldH=H;
   W=nw; H=nh;
   frames.forEach(function(fr){
     eachNode(fr.layers,function(m){ if(m.type==="layer"){ m.data=resizeData(m.data, oldW, oldH); announceLayerWrite(m); } });
   });
   curFrame=Math.min(curFrame,frames.length-1); sel=null;
-  syncCanvasSize(false); if(!manualZoom) fitZoom();
+  syncCanvasSize(false);
+}
+function applyCanvasSize(nw, nh){
+  if(nw===W && nh===H) return;
+  pushHistory();
+  resizeFramesData(nw, nh);
+  if(!manualZoom) fitZoom();
   toast("サイズを "+nw+" × "+nh+" にしました");
+}
+/* Nearest-neighbour resample of a flat cell array — the right
+   sampling for pixel art (no new colours are ever invented). */
+function resampleCells(src, sw, sh, dw, dh){
+  var out=new Array(dw*dh);
+  for(var y=0;y<dh;y++){
+    var sy=Math.min(sh-1, Math.floor(y*sh/dh));
+    for(var x=0;x<dw;x++){
+      var sx=Math.min(sw-1, Math.floor(x*sw/dw));
+      out[y*dw+x]=src[sy*sw+sx];
+    }
+  }
+  return out;
+}
+/* Sprite-sheet mode canvas resize: the numbers are ONE FRAME's
+   size (the size readout everywhere names the frame, never the
+   sheet). The redistribution idea stays: every layer is composed
+   into one sheet image (frames in the current columns × rows),
+   the sheet is resampled as a single picture by the frame-size
+   ratio, and the result is split back into frames of the new
+   size — so one frame's artwork can flow into its neighbours,
+   exactly like scaling the sheet image itself. Example: frames
+   of 64×64 in a 2×2 sheet resized to 32×32 shrink the sheet from
+   128×128 to 64×64, and the old picture's top-left quadrant lands
+   in frame 1, top-right in frame 2, and so on. Each written layer
+   goes through announceLayerWrite, so the change shows on the
+   canvas and in previews immediately. sheetResizeData is the data
+   half, shared with the size dialog's live preview. */
+function sheetResizeData(fw, fh){
+  var L=sheetLayout();
+  var cols=L.cols, rows=L.rows;
+  var sw=W*cols, sh=H*rows, dw=fw*cols, dh=fh*rows;
+  /* layer "slots": the n-th layer node of each frame, in tree
+     order — frames whose tree is shorter simply sit that slot out */
+  var perFrame=frames.map(function(fr){
+    var arr=[];
+    eachNode(fr.layers,function(m){ if(m.type==="layer") arr.push(m); });
+    return arr;
+  });
+  var slots=0;
+  perFrame.forEach(function(a){ if(a.length>slots) slots=a.length; });
+  for(var s=0;s<slots;s++){
+    var sheet=new Array(sw*sh);
+    for(var i=0;i<sheet.length;i++) sheet[i]=null;
+    var fi, x, y;
+    for(fi=0; fi<frames.length; fi++){
+      var node=perFrame[fi][s];
+      if(!node) continue;
+      var ox=(fi%cols)*W, oy=Math.floor(fi/cols)*H;
+      for(y=0;y<H;y++) for(x=0;x<W;x++) sheet[(oy+y)*sw+(ox+x)]=node.data[y*W+x];
+    }
+    var rs=resampleCells(sheet, sw, sh, dw, dh);
+    for(fi=0; fi<frames.length; fi++){
+      var nd=perFrame[fi][s];
+      if(!nd) continue;
+      var ox2=(fi%cols)*fw, oy2=Math.floor(fi/cols)*fh;
+      var nd2=new Array(fw*fh);
+      for(y=0;y<fh;y++) for(x=0;x<fw;x++) nd2[y*fw+x]=rs[(oy2+y)*dw+(ox2+x)];
+      nd.data=nd2;
+      announceLayerWrite(nd);
+    }
+  }
+  W=fw; H=fh;
+  curFrame=Math.min(curFrame,frames.length-1); sel=null;
+  syncCanvasSize(false);
+}
+function applySheetSize(fw, fh){
+  fw=Math.max(1, Math.min(256, fw)); fh=Math.max(1, Math.min(256, fh));
+  if(fw===W && fh===H) return;
+  pushHistory();
+  sheetResizeData(fw, fh);
+  if(!manualZoom) fitZoom();
+  var L=sheetLayout();
+  toast("1フレームを "+fw+" × "+fh+" にしました（シート全体 "+(fw*L.cols)+" × "+(fh*L.rows)+" へ再分配）");
 }
 $("sizeSel").addEventListener("change",function(e){
   if(e.target.value==="custom"){ openSizeDialog(); return; }
   if(e.target.value==="cur"){ return; } /* already exactly this size */
   var n=parseInt(e.target.value,10);
+  /* in sheet mode the number is still ONE FRAME's size — the sheet
+     is redistributed by that ratio (same rule as the size dialog) */
+  if(viewMode==="sheet"){ applySheetSize(n, n); syncSizeSel(); return; }
   if(n===W && n===H) return;
   applyCanvasSize(n, n);
 });
+/* ---- canvas-size dialog: two rows (横 / 縦), each a long 1–256
+   slider two-way synced with its number box. The numbers are the
+   FRAME's size in both modes (in sheet mode the sheet is
+   redistributed by the frame-size ratio).
+   LIVE PREVIEW: while the dialog is open, every 'input' from the
+   sliders / number boxes / presets resizes the real canvas behind
+   the dialog at once and re-fits the view so the whole canvas
+   stays visible. Nothing is committed yet: cancelling restores
+   the pre-dialog snapshot AND the pre-dialog zoom / pan, while
+   applying keeps the live result and records ONE undo step back
+   to that same snapshot. ---- */
+var sizeLive=null;
+function setSizeInputs(w,h){
+  $("sizeW").value=w; $("sizeH").value=h;
+  $("sizeWRange").value=Math.max(1, Math.min(256, w));
+  $("sizeHRange").value=Math.max(1, Math.min(256, h));
+}
 function openSizeDialog(){
-  $("sizeW").value=W; $("sizeH").value=H;
+  setSizeInputs(W, H);
+  $("sizeSheetNote").hidden=(viewMode!=="sheet");
+  $("sizeNote").textContent=(viewMode==="sheet")
+    ? "シート全体を1枚の絵として拡大・縮小し、今の列 × 行でフレームに分け直します。"
+    : "小さくすると、はみ出た部分は切り取られます。";
+  sizeLive={snap:snapshot(), stagePx:stagePx, panX:panX, panY:panY, manualZoom:manualZoom, committed:false};
   $("sizeBackdrop").hidden=false;
+}
+function sizeDlgLive(){
+  if(!sizeLive) return;
+  var nw=parseInt($("sizeW").value,10), nh=parseInt($("sizeH").value,10);
+  if(isNaN(nw)||isNaN(nh)) return;
+  nw=Math.max(1, Math.min(256, nw)); nh=Math.max(1, Math.min(256, nh));
+  if(nw!==W || nh!==H){
+    if(viewMode==="sheet") sheetResizeData(nw, nh);
+    else resizeFramesData(nw, nh);
+  }
+  fitZoom(); /* the whole canvas stays in view while the size changes */
 }
 function closeSizeDialog(){
   $("sizeBackdrop").hidden=true;
+  if(sizeLive && !sizeLive.committed){
+    /* cancelled: the pre-dialog size, pixels and view come back */
+    var sv=sizeLive; sizeLive=null;
+    restore(sv.snap);
+    setZoom(sv.stagePx, true);
+    manualZoom=sv.manualZoom;
+    panX=sv.panX; panY=sv.panY; clampPan(); layoutWrap();
+  } else {
+    sizeLive=null;
+  }
   /* keep the select showing the current (actual) size */
   syncSizeSel();
 }
+$("sizeWRange").addEventListener("input",function(){ $("sizeW").value=this.value; sizeDlgLive(); });
+$("sizeHRange").addEventListener("input",function(){ $("sizeH").value=this.value; sizeDlgLive(); });
+$("sizeW").addEventListener("input",function(){ var v=parseInt(this.value,10); if(!isNaN(v)) $("sizeWRange").value=Math.max(1, Math.min(256, v)); sizeDlgLive(); });
+$("sizeH").addEventListener("input",function(){ var v=parseInt(this.value,10); if(!isNaN(v)) $("sizeHRange").value=Math.max(1, Math.min(256, v)); sizeDlgLive(); });
 $("sizeApplyBtn").addEventListener("click",function(){
   var nw=parseInt($("sizeW").value,10), nh=parseInt($("sizeH").value,10);
   if(isNaN(nw)||isNaN(nh)||nw<1||nh<1){ toast("サイズは 1以上の数で入力してね"); return; }
-  applyCanvasSize(nw, nh);
+  nw=Math.min(256,nw); nh=Math.min(256,nh);
+  if(sizeLive){
+    /* the canvas behind the dialog already shows this size: just
+       commit it, as a single undo step to the pre-dialog state */
+    if(nw!==W || nh!==H){
+      if(viewMode==="sheet") sheetResizeData(nw, nh); else resizeFramesData(nw, nh);
+      fitZoom();
+    }
+    if(sizeLive.snap!==snapshot()){
+      undoStack.push(sizeLive.snap); if(undoStack.length>90) undoStack.shift();
+      redoStack.length=0; syncUndoBtns(); markEdit(); flatEpoch++;
+    }
+    sizeLive.committed=true;
+    toast(viewMode==="sheet"? ("1フレームを "+nw+" × "+nh+" にしました") : ("サイズを "+nw+" × "+nh+" にしました"));
+    closeSizeDialog();
+    return;
+  }
+  if(viewMode==="sheet") applySheetSize(nw, nh);
+  else applyCanvasSize(nw, nh);
   closeSizeDialog();
 });
 $("sizeCloseBtn").addEventListener("click",closeSizeDialog);
 $("sizeBackdrop").addEventListener("click",function(e){ if(e.target===this) closeSizeDialog(); });
 document.querySelectorAll("#sizePresets button").forEach(function(b){
-  b.addEventListener("click",function(){ $("sizeW").value=b.dataset.s; $("sizeH").value=b.dataset.s; });
+  b.addEventListener("click",function(){ setSizeInputs(parseInt(b.dataset.s,10), parseInt(b.dataset.s,10)); sizeDlgLive(); });
 });
+/* new-project dialog: the same slider ⇄ number pairing */
+$("npWRange").addEventListener("input",function(){ $("npW").value=this.value; updateNpPreview(); });
+$("npHRange").addEventListener("input",function(){ $("npH").value=this.value; updateNpPreview(); });
+$("npW").addEventListener("input",function(){ var v=parseInt(this.value,10); if(!isNaN(v)) $("npWRange").value=Math.max(1, Math.min(256, v)); updateNpPreview(); });
+$("npH").addEventListener("input",function(){ var v=parseInt(this.value,10); if(!isNaN(v)) $("npHRange").value=Math.max(1, Math.min(256, v)); updateNpPreview(); });
 $("mSize").addEventListener("click",openSizeDialog);
 $("undoBtn").addEventListener("click",undo);
 $("redoBtn").addEventListener("click",redo);
@@ -5443,8 +5828,17 @@ $("frameFxBtn").addEventListener("click",function(){
   openFx({kind:"frame", index:curFrame});
 });
 function setFps(v){
-  fps=Math.max(1,Math.min(24, isNaN(v)?8:v));
-  $("fpsRange").value=fps; $("fpsNum").value=fps;
+  if(limitOn()){
+    /* 限界突破： the number box takes any sane value and the
+       slider's span stretches to it (the preview timer itself is
+       floored in restartPreview, so a huge FPS cannot spin) */
+    fps=isNaN(v)? 8 : Math.max(1, Math.min(9999, v));
+    expandRangeFor($("fpsRange"), fps);
+  } else {
+    fps=Math.max(1,Math.min(24, isNaN(v)?8:v));
+  }
+  $("fpsRange").value=Math.max(parseFloat($("fpsRange").min), Math.min(parseFloat($("fpsRange").max), fps));
+  $("fpsNum").value=fps;
   restartPreview();
 }
 $("fpsRange").addEventListener("input",function(e){ setFps(parseInt(e.target.value,10)); });
@@ -5534,7 +5928,7 @@ function compositeNodeCached(n){
 var layerSig="", layerPainters=[];
 function renderLayers(){
   var fr=frames[curFrame];
-  var sig=curFrame+"|"+W+"x"+H+"|"+fr.active+"|";
+  var sig=projectEpoch+"#"+curFrame+"|"+W+"x"+H+"|"+fr.active+"|";
   eachNode(fr.layers,function(n){
     sig+=n.id+":"+(n.name||"")+":"+(n.visible?1:0)+":"+(n.collapsed?1:0)+":"+(n.opacity==null?1:n.opacity)+":"+fxSig(n.fx)+";";
   });
@@ -5836,6 +6230,7 @@ function openFx(target){
      frame groups all composite with real alpha now */
   $("fxOpacityRow").style.display = "";
   var op=Math.round((n.opacity==null?1:n.opacity)*100);
+  if(limitOn()) expandRangeFor($("fxOpacity"), op); /* a limit-broken opacity reopens reachable */
   $("fxOpacity").value=op; $("fxOpacityNum").value=op;
   buildFxList();
   $("fxBackdrop").hidden=false;
@@ -5956,7 +6351,11 @@ function buildFxList(){
           lab.appendChild(chk);
         } else {
           var rin=document.createElement("input");
-          rin.type="range"; rin.min=c.min; rin.max=c.max; rin.value=prm[c.k];
+          rin.type="range"; rin.min=c.min; rin.max=c.max;
+          /* a value stored beyond the base span (限界突破) reopens
+             with the slider's span stretched to reach it */
+          if(prm[c.k]<c.min || prm[c.k]>c.max) expandRangeFor(rin, prm[c.k]);
+          rin.value=prm[c.k];
           var num=document.createElement("input");
           num.type="number"; num.className="fx-num"; num.min=c.min; num.max=c.max; num.value=prm[c.k];
           num.setAttribute("aria-label", def.label+"（数値）");
@@ -5964,6 +6363,14 @@ function buildFxList(){
           num.addEventListener("change",function(){
             var v=parseInt(num.value,10);
             if(isNaN(v)) v=prm[c.k];
+            if(limitOn()){
+              /* 限界突破： any value is accepted; the slider's span
+                 stretches to include it */
+              prm[c.k]=v;
+              expandRangeFor(rin, v);
+              rin.value=v; num.value=v; renderAll();
+              return;
+            }
             v=Math.max(c.min,Math.min(c.max,v));
             prm[c.k]=v; rin.value=v; num.value=v; renderAll();
           });
@@ -5989,9 +6396,17 @@ $("fxAddBtn").addEventListener("click",function(){
 });
 function setFxOpacity(v){
   var n=fxTargetNode(); if(!n) return;
-  v=Math.max(0,Math.min(100, isNaN(v)?100:v));
+  if(isNaN(v)) v=Math.round((n.opacity==null?1:n.opacity)*100);
+  if(limitOn()){
+    /* any value is accepted and stored; the slider stretches to
+       reach it, and compositing clamps the effective alpha */
+    expandRangeFor($("fxOpacity"), v);
+  } else {
+    v=Math.max(0,Math.min(100, v));
+  }
   n.opacity=v/100;
-  $("fxOpacity").value=v; $("fxOpacityNum").value=v;
+  $("fxOpacity").value=Math.max(parseFloat($("fxOpacity").min), Math.min(parseFloat($("fxOpacity").max), v));
+  $("fxOpacityNum").value=v;
   renderAll();
 }
 $("fxOpacity").addEventListener("input",function(e){ setFxOpacity(parseInt(e.target.value,10)); });
@@ -6407,7 +6822,7 @@ var curProjId=null, projPcSaved=false;
 var projLive=false;
 var projRev=0, pcSavedRev=-1, pcSavedAt=null, browserSavedRev=-1, lastBrowserAt=null;
 var quotaWarned=false, lastDeleted=null;
-var settings={auto:true, interval:60, lastId:null, theme:"auto", themeColor:null, panels:{}, pageZoom:100, layout:null};
+var settings={auto:true, interval:60, lastId:null, theme:"auto", themeColor:null, panels:{}, pageZoom:100, layout:null, impFast:false, toolDlgHidden:false};
 function loadSettings(){
   try{ var s=JSON.parse(localStorage.getItem(SET_KEY)||"null"); if(s && typeof s==="object") settings=Object.assign(settings,s); }catch(e){}
 }
@@ -6515,6 +6930,10 @@ function saveToBrowser(silent){
     curProjId=newProjId();
     rec={id:curProjId, createdAt:now, fav:false};
     store.unshift(rec);
+    /* the project just earned its store id: its undo history,
+       kept under a throwaway key until now, moves to the id key,
+       so reopening this project later finds its own history */
+    rekeyHistContext("p:"+curProjId);
   }
   rec.name=projName;
   rec.updatedAt=now;
@@ -6577,8 +6996,11 @@ window.addEventListener("beforeunload",function(){
   if(settings.auto && hasWorkToSave() && projRev!==browserSavedRev) saveToBrowser(true);
 });
 function applyLoadedProject(d){
+  resetEditorState(); /* the outgoing project's editor state is dropped wholesale */
   expandPayload(d); /* v3 files carry packed layers; restore plain arrays */
-  pushHistory();
+  /* no pushHistory here: opening a project is not an undoable edit,
+     and the caller (openStoredProject) has already switched the
+     history context to this project's own stacks */
   W=d.w; H=d.h||d.w; frames=d.frames; frameGroups=d.frameGroups||[]; curFrame=0;
   fps=d.fps||8; sel=null;
   /* sprite-sheet columns / rows are part of the project: restore the
@@ -6594,6 +7016,7 @@ function applyLoadedProject(d){
 }
 function openStoredProject(rec){
   if(!rec || !rec.data || !rec.data.frames){ toast("そのプロジェクトは読み込めませんでした"); return; }
+  switchHistContext("p:"+rec.id); /* undo history is per project */
   applyLoadedProject(rec.data);
   curProjId=rec.id; projPcSaved=!!rec.pcSaved;
   projRev=0; pcSavedRev=rec.pcSaved? 0 : -1; pcSavedAt=rec.pcSavedAt||null;
@@ -6752,6 +7175,7 @@ function deleteStoredProject(rec){
   if(idx<0) return;
   var removed=st.splice(idx,1)[0];
   try{ writeStore(st); }catch(e){}
+  dropHistContext("p:"+removed.id); /* a deleted project takes its undo history with it */
   if(removed.id===curProjId){ curProjId=null; projLive=false; }
   if(settings.lastId===removed.id){ settings.lastId=null; saveSettings(); }
   lastDeleted={rec:removed, idx:idx};
@@ -6780,6 +7204,75 @@ function requestDeleteProject(rec){
     ]
   });
 }
+/* ============ ファイル menu: rename / delete the OPEN project ====
+   The same flows the home cards use (renameProject's dialog,
+   requestDeleteProject's save-state-aware confirmation), reached
+   from the editor's ファイル menu for the project being edited. */
+function renameCurrentProject(){
+  if(curProjId){
+    var st=loadStore();
+    for(var i=0;i<st.length;i++) if(st[i].id===curProjId){ renameProject(st[i]); return; }
+  }
+  /* not in the browser store yet: the name lives only in the editor */
+  openDlg({
+    title:"プロジェクト名の変更",
+    msg:"新しいプロジェクト名を入力してください。",
+    input:{value:projName||""},
+    buttons:[
+      {label:"変更する", kind:"primary", fn:function(v){
+        v=(v||"").trim(); if(!v) return;
+        projName=v; $("projName").value=v; markEdit();
+        toast("名前を「"+v+"」に変更しました");
+      }},
+      {label:"キャンセル"}
+    ]
+  });
+}
+/* Back to the untouched blank starter (what the editor holds before
+   anything is opened): used after the open project is deleted, so
+   the deleted project cannot quietly come back via auto-save. */
+function resetToStarter(){
+  switchHistContext(freshHistKey());
+  resetEditorState();
+  W=32; H=32; frames=[makeFrame()]; frameGroups=[]; curFrame=0;
+  fps=8; $("fpsRange").value=8; $("fpsNum").value=8; restartPreview();
+  expCols=1; expRows=1; expPad=0; syncSheetUI();
+  viewMode="normal"; setSeg("viewModeSeg","m","normal");
+  bgMode=0; wrap.style.background=""; wrap.style.backgroundSize=""; $("bgBtn").textContent="背景：市松";
+  projName="ドット絵"; $("projName").value="ドット絵";
+  curProjId=null; projPcSaved=false; projLive=false;
+  projRev=0; pcSavedRev=-1; pcSavedAt=null; browserSavedRev=-1; lastBrowserAt=null;
+  manualZoom=false; panX=0; panY=0;
+  syncCanvasSize(true);
+  fitZoom();
+  renderAll();
+  updateSaveStatus();
+}
+function deleteCurrentProject(){
+  if(!curProjId){ toast("このプロジェクトはまだブラウザに保存されていません（削除するものがありません）"); return; }
+  var st=loadStore(), rec=null;
+  for(var i=0;i<st.length;i++) if(st[i].id===curProjId){ rec=st[i]; break; }
+  if(!rec){ toast("保存済みのプロジェクトが見つかりませんでした"); return; }
+  var finish=function(){
+    deleteStoredProject(rec); /* store removal + undo toast, as on the home screen */
+    resetToStarter();
+    showHome();
+  };
+  /* warn only when the LATEST version is not on the PC yet — the
+     same rule as the home screen's delete */
+  if(pcState()==="ok"){ finish(); return; }
+  openDlg({
+    title:"削除の確認",
+    msg:"「"+(rec.name||"プロジェクト")+"」の最新版は、まだPCに保存されていません。\n削除するとブラウザからも消えて、元に戻せなくなります。",
+    buttons:[
+      {label:"PCに保存してから削除", kind:"primary", fn:function(){ downloadStoredProject(rec); finish(); }},
+      {label:"そのまま削除", kind:"danger", fn:finish},
+      {label:"キャンセル"}
+    ]
+  });
+}
+$("mRenameProj").addEventListener("click",renameCurrentProject);
+$("mDeleteProj").addEventListener("click",deleteCurrentProject);
 function duplicateProject(rec){
   var st=loadStore();
   var copy=JSON.parse(JSON.stringify(rec));
@@ -7426,7 +7919,11 @@ $("jsonFile").addEventListener("change",function(e){
    project data URI — both funnel through here). */
 function loadProjectObject(d){
   expandPayload(d); /* v3: unpack the packed layer data */
-  pushHistory(); W=d.w; H=d.h||d.w; frames=d.frames; frameGroups=d.frameGroups||[]; curFrame=0; fps=d.fps||8; sel=null;
+  /* a file / data-URI project is a fresh context: the previous
+     project's history is stashed under its own key, never merged */
+  switchHistContext(freshHistKey());
+  resetEditorState();
+  W=d.w; H=d.h||d.w; frames=d.frames; frameGroups=d.frameGroups||[]; curFrame=0; fps=d.fps||8; sel=null;
   if(typeof d.name==="string"){ projName=d.name; $("projName").value=d.name; }
   normalizeLoaded();
   expCols=Math.max(1, Math.min(64, parseInt(d.cols,10)||1));
@@ -7679,6 +8176,31 @@ function reduceColors(cells, maxN){
     return best.hex;
   });
 }
+/* ============ large-image import: stepped downscale (opt-in) ====
+   Resampling a huge photo (say 8000×6000) straight to the target
+   size in ONE drawImage is the single most expensive step of an
+   import — and the freeze the user feels. With 表示 →
+   画像読み込み高速化 ON, an oversized stage is first halved
+   repeatedly (each step is cheap and high-quality) until it is at
+   most ~2× the target, and only then drawn to the target. The
+   step changes the smoothing slightly, so the toggle defaults to
+   OFF (the traditional single-step result) and lives in the 表示
+   menu, as specified for visible changes. */
+function impFastOn(){ return typeof settings!=="undefined" && settings && !!settings.impFast; }
+function impStepDown(stage, tw, th){
+  var cur=stage, guard=0;
+  while((cur.width>tw*2 || cur.height>th*2) && guard++<12){
+    var nw2=Math.max(tw, Math.floor(cur.width/2)), nh2=Math.max(th, Math.floor(cur.height/2));
+    if(nw2>=cur.width && nh2>=cur.height) break;
+    var c2=document.createElement("canvas"); c2.width=nw2; c2.height=nh2;
+    var x2=c2.getContext("2d");
+    x2.imageSmoothingEnabled=true;
+    try{ x2.imageSmoothingQuality="high"; }catch(e){}
+    x2.drawImage(cur, 0, 0, nw2, nh2);
+    cur=c2;
+  }
+  return cur;
+}
 /* run the whole pipeline for one source; returns {w,h,cells,colors} */
 function processImpSource(src){
   var stage=impStageCanvas(src);
@@ -7696,6 +8218,7 @@ function processImpSource(src){
     tw=Math.max(1, Math.min(2048, impFit==="image"? stage.width : W));
     th=Math.max(1, Math.min(2048, impFit==="image"? stage.height : H));
   }
+  if(impFastOn() && (stage.width>tw*2+64 || stage.height>th*2+64)) stage=impStepDown(stage, tw, th);
   var c=document.createElement("canvas"); c.width=tw; c.height=th;
   var x=c.getContext("2d");
   /* "average" leans on the browser's smoothing resample; "centre" uses
@@ -7905,7 +8428,9 @@ $("impCropAllBtn").addEventListener("click",function(){
 function wireImpSlider(rangeId, numId, set){
   $(rangeId).addEventListener("input",function(){ set(parseInt(this.value,10)||0); $(numId).value=this.value; scheduleImpPreview(); });
   $(numId).addEventListener("change",function(){
-    var v=Math.max(-100, Math.min(100, parseInt(this.value,10)||0));
+    var v=parseInt(this.value,10)||0;
+    if(limitOn()){ expandRangeFor($(rangeId), v); } /* 限界突破： any value, slider stretches */
+    else v=Math.max(-100, Math.min(100, v));
     this.value=v; $(rangeId).value=v; set(v); scheduleImpPreview();
   });
 }
@@ -7975,6 +8500,8 @@ function frameFromCells(r){
 }
 function applyImportResult(r, dest){
   if(dest==="project"){
+    switchHistContext(freshHistKey()); /* the import becomes a new project with its own history */
+    resetEditorState();
     W=r.w; H=r.h;
     frames=[frameFromCells(r)]; frameGroups=[]; selFGroupId=null; curFrame=0; sel=null;
     viewMode="normal"; setSeg("viewModeSeg","m","normal");
@@ -8012,6 +8539,7 @@ function applyImportResult(r, dest){
   renderAll();
 }
 function importSheetResult(r){
+  resetEditorState(); /* the sheet replaces every frame: drop the old editor state */
   var o=impSheetOpts();
   var cols=o.cols, rows=o.rows, cw=o.cw, chh=o.ch;
   W=cw; H=chh;
@@ -8029,7 +8557,7 @@ function importSheetResult(r){
   if(!manualZoom) fitZoom();
   toast("スプライトシートとして読み込みました（"+cols+" 列 × "+rows+" 行 ＝ "+frames.length+" フレーム）");
 }
-$("impGoBtn").addEventListener("click",function(){
+$("impGoBtn").addEventListener("click",async function(){
   if(!impImg) return;
   var gif=impGifFrames, extras=impExtraFiles.slice();
   var mode=impMode, dest=impDest;
@@ -8041,9 +8569,18 @@ $("impGoBtn").addEventListener("click",function(){
   pushHistory();
   if(gif && gif.length>1){
     /* an animated GIF becomes frames, whatever destination was picked
-       (a new project replaces everything; anything else appends) */
-    var results=gif.map(function(g){ return processImpSource(g.canvas); });
+       (a new project replaces everything; anything else appends).
+       Frames are processed a few at a time with a yield between
+       batches, so a long / large GIF cannot freeze the UI solid —
+       the results are identical. */
+    var results=[];
+    for(var gi=0; gi<gif.length; gi++){
+      results.push(processImpSource(gif[gi].canvas));
+      if(gi%3===2) await new Promise(function(res){ setTimeout(res, 0); });
+    }
     if(dest==="project"){
+      switchHistContext(freshHistKey()); /* the import becomes a new project with its own history */
+      resetEditorState();
       var r0=results[0];
       W=r0.w; H=r0.h;
       frames=results.map(frameFromCells);
@@ -8223,9 +8760,42 @@ if(window.matchMedia){ window.matchMedia("(prefers-color-scheme: dark)").addEven
    UI exists in the page from the start but stays hidden until its
    switch is on. */
 var EXT_KEY="dot-studio.extensions.v1";
-var extState={hfp:false, palettes:false, svgexport:false, textstamp:false, themecolor:false, impdetail:false, pipoya:false};
+var extState={hfp:false, palettes:false, svgexport:false, textstamp:false, themecolor:false, impdetail:false, pipoya:false, limitbreak:false};
 try{ var exs=JSON.parse(localStorage.getItem(EXT_KEY)||"null"); if(exs && typeof exs==="object") extState=Object.assign(extState, exs); }catch(e){}
 function saveExtState(){ try{ localStorage.setItem(EXT_KEY, JSON.stringify(extState)); }catch(e){} }
+/* ============ 限界突破 (limit break) ============
+   While this extension is ON, the number box beside a slider
+   accepts ANY value — beyond the slider's max, below its min.
+   Entering an out-of-range value stretches that slider's span to
+   reach it (the slider itself is otherwise unchanged). The
+   stretched spans are runtime-only: resetLimitRanges() restores
+   every registered slider's original min/max, and it runs when
+   the extension is switched off and whenever a project is closed
+   / switched (resetEditorState). Effect parameters rebuild their
+   sliders from FX_DEFS on every dialog open, so they reset
+   naturally; the persistent sliders (FPS, opacity, import
+   brightness / contrast) register their base span on first use.
+   The stored VALUES are never clamped while ON; the effect /
+   compositing code clamps internally at the points where an
+   extreme value could break the math (see applyOneFx and
+   compositeListA), so typing stays free but rendering stays safe. */
+var limitPairs=[];
+function limitOn(){ return typeof extState!=="undefined" && !!extState.limitbreak; }
+function regLimitPair(el){
+  if(!el || el._lbReg) return;
+  el._lbReg=true;
+  limitPairs.push({el:el, min:el.min, max:el.max});
+}
+function expandRangeFor(el, v){
+  if(!el) return;
+  regLimitPair(el);
+  if(v<parseFloat(el.min)) el.min=v;
+  if(v>parseFloat(el.max)) el.max=v;
+}
+function resetLimitRanges(){
+  limitPairs=limitPairs.filter(function(p){ return p.el && p.el.isConnected; });
+  limitPairs.forEach(function(p){ p.el.min=p.min; p.el.max=p.max; });
+}
 var EXT_DEFS=[
   { id:"hfp",
     yomi:"はっくふぉーぷれい",
@@ -8261,7 +8831,12 @@ var EXT_DEFS=[
     yomi:"てーまからー",
     name:"テーマカラー",
     meta:"アプリ全体の配色テーマを変更 ・ 森／海／夕焼け／さくら／砂漠／モノクロ",
-    desc:"有効にすると、ホーム画面と「表示」メニューに「テーマカラー」ボタンが現れ、アプリ全体の配色テーマを選べるようになります。背景・パネル・文字・アクセントなど色の組み合わせがまとめて切り替わり、ライト／ダークそれぞれに合わせた配色になります。選択は保存され、次回も維持されます。無効にすると初期の配色に戻ります（ライト／ダークの切り替え自体は拡張機能なしで使えます）。" }
+    desc:"有効にすると、ホーム画面と「表示」メニューに「テーマカラー」ボタンが現れ、アプリ全体の配色テーマを選べるようになります。背景・パネル・文字・アクセントなど色の組み合わせがまとめて切り替わり、ライト／ダークそれぞれに合わせた配色になります。選択は保存され、次回も維持されます。無効にすると初期の配色に戻ります（ライト／ダークの切り替え自体は拡張機能なしで使えます）。" },
+  { id:"limitbreak",
+    yomi:"げんかいとっぱ",
+    name:"限界突破",
+    meta:"スライダーの上限・下限を超えた値を数値ボックスに入力可能に",
+    desc:"有効にすると、スライダーと数値ボックスの組（エフェクトの各パラメータ、不透明度、FPS、読み込みの明るさ／コントラストなど）で、数値ボックスにスライダーの上限を超える値や下限未満の値をそのまま入力できます。範囲を超えた値を入れると、そのスライダーの可動範囲がその値まで広がります。広がった可動範囲は保存されず、プロジェクトを閉じると初期範囲に戻ります。無効の間は従来どおり、数値もスライダーの範囲内に収まります。" }
 ];
 function renderExtList(){
   var box=$("extList"); if(!box) return;
@@ -8345,6 +8920,8 @@ function applyExtState(){
   buildToolHelp();
   /* image-import detail sections follow their extension */
   applyImpDetailVis();
+  /* 限界突破 off: every slider span it stretched snaps back */
+  if(!extState.limitbreak) resetLimitRanges();
   /* ウィンドウ menu state (settings only exists by now) */
   applyPanelVis();
   buildWindowMenu();
@@ -8790,6 +9367,8 @@ function hfpStartProject(it, url){
       }
       closeNewDialog();
       hideHome();
+      switchHistContext(freshHistKey()); /* a new project starts with its own empty history */
+      resetEditorState();
       W=cw; H=ch;
       frames=[]; frameGroups=[]; selFGroupId=null;
       for(var rr=0;rr<rows;rr++) for(var cc=0;cc<cols;cc++){
@@ -8925,6 +9504,23 @@ $("mZoomIn").addEventListener("click",function(){ stepPageZoom(1); });
 $("mZoomOut").addEventListener("click",function(){ stepPageZoom(-1); });
 $("mZoomReset").addEventListener("click",function(){ if(pageZoomVal()!==100) setPageZoom(100); });
 
+/* ============ 画像読み込み高速化 (large-image import speed) ====
+   Opt-in, in the 表示 menu: ON makes processImpSource downscale
+   oversized sources in steps (see impStepDown) so a huge photo
+   does not freeze the tab. It slightly changes the smoothing, so
+   the default is OFF — the traditional single-step result. */
+function syncImpFastLabel(){
+  var b=$("mImpFast"); if(b) b.textContent="画像読み込み高速化："+(impFastOn()? "ON" : "OFF");
+}
+$("mImpFast").addEventListener("click",function(){
+  settings.impFast=!settings.impFast;
+  saveSettings();
+  syncImpFastLabel();
+  toast(settings.impFast? "画像読み込み高速化をONにしました（大きな画像は段階的に縮小して処理します）" : "画像読み込み高速化をOFFにしました（従来の処理に戻ります）");
+  if(!$("impBackdrop").hidden) scheduleImpPreview();
+});
+syncImpFastLabel();
+
 /* ============ 画面レイアウト: PC / スマホ・タブレット ============
    Two editor layouts over the same DOM: the PC layout (default on
    desktop) and the mobile layout (a slim tool rail on the left,
@@ -8954,6 +9550,7 @@ function applyLayout(){
   document.body.classList.toggle("layout-mobile", m==="mobile");
   if(m!=="mobile") document.body.classList.remove("mobile-layers-open","mobile-color-open");
   var b=$("mLayoutMode"); if(b) b.textContent="画面："+(m==="mobile"? "スマホ・タブレット" : "PC");
+  var hb=$("homeLayoutBtn"); if(hb) hb.textContent="画面："+(m==="mobile"? "スマホ・タブレット" : "PC");
   syncMobileBar();
   requestAnimationFrame(function(){ if(!manualZoom) fitZoom(); else { layoutWrap(); sizeHiRes(); } });
 }
@@ -8962,6 +9559,11 @@ function setLayoutMode(m){
   toast(m==="mobile"? "スマホ・タブレット画面に切り替えました" : "PC画面に切り替えました");
 }
 $("mLayoutMode").addEventListener("click",function(){
+  setLayoutMode(layoutMode()==="mobile"? "pc" : "mobile");
+});
+/* the home screen carries the same switch (same setting, same
+   storage) so the layout can be chosen before opening a project */
+$("homeLayoutBtn").addEventListener("click",function(){
   setLayoutMode(layoutMode()==="mobile"? "pc" : "mobile");
 });
 /* ---- the mobile bottom bar: undo / redo, current colour, and the
